@@ -6,6 +6,7 @@
   import user2 from '@/assets/imgs/avatars/user_2.jpg'
   import user3 from '@/assets/imgs/avatars/user_3.jpg'
   import user4 from '@/assets/imgs/avatars/user_4.jpg'
+  import EmptyState from "@/components/emptyState.vue";
 
   const activeIndex = ref(null);
 
@@ -35,6 +36,9 @@
       avatar: user4
     }
   }
+
+  let usersLength = Object.keys(usersData).length;
+
 </script>
 
 <template>
@@ -54,6 +58,7 @@
         </div>
       </li>
     </ul>
+    <empty-state v-if="usersLength === 0"></empty-state>
   </div>
 </template>
 

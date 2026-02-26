@@ -1,6 +1,14 @@
 <script setup>
   import switcher from "./switcher.vue"
   import recentMessages from "./recentMessages.vue"
+  import recentGroupMessages from "./recentGroupMessages.vue"
+  import { ref } from "vue"
+
+  const currentTab = ref("Chat");
+
+  const handleEmit = (playload) => {
+    currentTab.value = playload;
+  }
 
 </script>
 
@@ -11,8 +19,9 @@
     <div class="chats__heading heading">
       <h2 class="chats__heading-title">Recent Messages</h2>
     </div>
-    <switcher firstName="Chat" secondName="Groups"></switcher>
-    <recent-messages></recent-messages>
+    <switcher @switch="handleEmit" firstName="Chat" secondName="Group"></switcher>
+    <recent-messages v-if="currentTab == 'Chat'"></recent-messages>
+    <recentGroupMessages v-if="currentTab == 'Group'"></recentGroupMessages>
   </section>
 </template>
 

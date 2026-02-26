@@ -1,5 +1,7 @@
 <script setup>
-import { ref } from "vue"
+import { ref, defineEmits } from "vue"
+
+const emit = defineEmits(["switch"])
 
 const props = defineProps({
   firstName: String,
@@ -10,6 +12,7 @@ const activeTab = ref( props.firstName );
 
 const setTab = (name) => {
   activeTab.value = name;
+  emit("switch", name);
 }
 
 </script>
