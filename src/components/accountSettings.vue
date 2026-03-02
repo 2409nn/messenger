@@ -49,7 +49,7 @@
   const toggleDark = () => {
     isDark.value = !isDark.value;
     console.log(isDark.value);
-    // emit("update:isDark", isDark.value);
+    document.getElementById("app").setAttribute('data-theme', isDark.value ? 'dark' : 'light');
   }
 
 </script>
@@ -60,7 +60,7 @@
 
       <button class="accountSettings__heading-closeBtn" @click="closeButton">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7.75 20.75H13.75C18.75 20.75 20.75 18.75 20.75 13.75V7.75C20.75 2.75 18.75 0.75 13.75 0.75H7.75C2.75 0.75 0.75 2.75 0.75 7.75V13.75C0.75 18.75 2.75 20.75 7.75 20.75Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7.75 20.75H13.75C18.75 20.75 20.75 18.75 20.75 13.75V7.75C20.75 2.75 18.75 0.75 13.75 0.75H7.75C2.75 0.75 0.75 2.75 0.75 7.75V13.75C0.75 18.75 2.75 20.75 7.75 20.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M12.01 14.28L8.48999 10.75L12.01 7.21997" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
@@ -119,8 +119,8 @@
         <div class="accountSettings__preferences-privacy">
           <toggle-list title="Privacy" @click="isOpen.privacy = !isOpen.privacy">
             <svg width="20" height="20" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M14.581 7.74396C14.581 11.5836 11.7936 15.1798 7.98539 16.2319C7.72628 16.3026 7.44361 16.3026 7.18449 16.2319C3.3763 15.1798 0.588867 11.5836 0.588867 7.74396V4.29695C0.588867 3.65309 1.07569 2.92286 1.68029 2.67945L6.05381 0.889204C7.03531 0.488755 8.14243 0.488755 9.12392 0.889204L13.4974 2.67945C14.0942 2.92286 14.5889 3.65309 14.5889 4.29695L14.581 7.74396Z" stroke="black" stroke-width="1.17779" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M7.58497 8.82755C8.00147 8.82755 8.4009 8.6621 8.69541 8.36759C8.98991 8.07309 9.15536 7.67365 9.15536 7.25716C9.15536 6.84066 8.98991 6.44123 8.69541 6.14672C8.4009 5.85222 8.00147 5.68677 7.58497 5.68677C7.16848 5.68677 6.76905 5.85222 6.47454 6.14672C6.18004 6.44123 6.01459 6.84066 6.01459 7.25716C6.01459 7.67365 6.18004 8.07309 6.47454 8.36759C6.76905 8.6621 7.16848 8.82755 7.58497 8.82755ZM7.58497 8.82755V11.1831" stroke="black" stroke-width="1.17779" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14.581 7.74396C14.581 11.5836 11.7936 15.1798 7.98539 16.2319C7.72628 16.3026 7.44361 16.3026 7.18449 16.2319C3.3763 15.1798 0.588867 11.5836 0.588867 7.74396V4.29695C0.588867 3.65309 1.07569 2.92286 1.68029 2.67945L6.05381 0.889204C7.03531 0.488755 8.14243 0.488755 9.12392 0.889204L13.4974 2.67945C14.0942 2.92286 14.5889 3.65309 14.5889 4.29695L14.581 7.74396Z" stroke="currentColor" stroke-width="1.17779" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7.58497 8.82755C8.00147 8.82755 8.4009 8.6621 8.69541 8.36759C8.98991 8.07309 9.15536 7.67365 9.15536 7.25716C9.15536 6.84066 8.98991 6.44123 8.69541 6.14672C8.4009 5.85222 8.00147 5.68677 7.58497 5.68677C7.16848 5.68677 6.76905 5.85222 6.47454 6.14672C6.18004 6.44123 6.01459 6.84066 6.01459 7.25716C6.01459 7.67365 6.18004 8.07309 6.47454 8.36759C6.76905 8.6621 7.16848 8.82755 7.58497 8.82755ZM7.58497 8.82755V11.1831" stroke="currentColor" stroke-width="1.17779" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </toggle-list>
           <ul class="accountSettings__preferences__list" v-if="isOpen.privacy">
@@ -159,8 +159,8 @@
 
         <div class="account__settings__preferences-theme">
           <toggle-list title="Theme" @click="isOpen.theme = !isOpen.theme">
-            <svg stroke="currentColor" width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0.561745 8.07704C0.821947 11.7994 3.98051 14.8279 7.76067 14.9941C10.4277 15.1097 12.8129 13.8666 14.244 11.9078C14.8367 11.1055 14.5187 10.5707 13.5285 10.7513C13.0442 10.8381 12.5455 10.8742 12.0251 10.8525C8.49068 10.708 5.59955 7.75179 5.58509 4.26073C5.57786 3.32111 5.77301 2.43209 6.12718 1.62257C6.51748 0.726312 6.04767 0.299868 5.14419 0.682945C2.28197 1.89 0.323227 4.77391 0.561745 8.07704Z" stroke="black" stroke-width="1.08418" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg stroke="currentColor" color="currentColor" width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.561745 8.07704C0.821947 11.7994 3.98051 14.8279 7.76067 14.9941C10.4277 15.1097 12.8129 13.8666 14.244 11.9078C14.8367 11.1055 14.5187 10.5707 13.5285 10.7513C13.0442 10.8381 12.5455 10.8742 12.0251 10.8525C8.49068 10.708 5.59955 7.75179 5.58509 4.26073C5.57786 3.32111 5.77301 2.43209 6.12718 1.62257C6.51748 0.726312 6.04767 0.299868 5.14419 0.682945C2.28197 1.89 0.323227 4.77391 0.561745 8.07704Z" stroke="currentColor" stroke-width="1.08418" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </toggle-list>
 
@@ -220,6 +220,7 @@
       display: flex;
       justify-content: left;
       padding-bottom: 20px;
+      color: var(--main-text-color);
 
       h3 {
         margin: auto;
@@ -229,18 +230,23 @@
       &-closeBtn {
         background: none;
         border: none;
-        stroke: black;
+        stroke: var(--main-text-color);
+
+        path {
+          color: var(--main-text-color);
+        }
 
         svg:hover {
           cursor: pointer;
-          fill: black;
-          stroke: white;
+          fill: var(--main-text-color);
+          stroke: var(--body-background);
         }
       }
     }
 
     &__support {
       margin-top: 40px;
+      color: var(--main-text-color);
 
       p {
         margin-top: 20px;
@@ -248,6 +254,7 @@
     }
 
     &__preferences {
+      color: var(--main-text-color);
 
       &__list {
         padding-bottom: 15px;
@@ -320,7 +327,6 @@
 
   .form-group label {
     font-size: 16px;
-    color: #333;
     font-weight: 500;
   }
 

@@ -25,66 +25,81 @@
 
 <template>
 
-  <div class="registration-form" @submit.prevent>
-    <h1 class="registration-form__title">{{ isLogin ? 'Log in' : 'Registration' }}</h1>
+    <section id="registration">
 
-    <form class="registration-form__container">
-      <div v-if="!isLogin" class="registration-form__field">
-        <label class="registration-form__label">Username</label>
-        <input type="text" class="registration-form__input" placeholder="Type username to find you...">
+      <div class="registration-form" @submit.prevent>
+        <h1 class="registration-form__title">{{ isLogin ? 'Log in' : 'Registration' }}</h1>
+
+        <form class="registration-form__container">
+          <div v-if="!isLogin" class="registration-form__field">
+            <label class="registration-form__label">Username</label>
+            <input type="text" class="registration-form__input" placeholder="Type username to find you...">
+          </div>
+
+          <div v-if="!isLogin" class="registration-form__row">
+            <div class="registration-form__field">
+              <label class="registration-form__label">Firstname</label>
+              <input type="text" class="registration-form__input" placeholder="Type your firstname...">
+            </div>
+            <div class="registration-form__field">
+              <label class="registration-form__label">Lastname</label>
+              <input type="text" class="registration-form__input" placeholder="Type your lastname...">
+            </div>
+          </div>
+
+          <div class="registration-form__field">
+            <label class="registration-form__label">Email</label>
+            <input type="email" class="registration-form__input" placeholder="Type email to identify you...">
+          </div>
+
+          <div class="registration-form__field">
+            <label class="registration-form__label">Password</label>
+            <input type="password" class="registration-form__input" placeholder="Type password...">
+          </div>
+
+          <div v-if="!isLogin" class="registration-form__captcha captcha">
+            <label class="captcha__container">
+              <input type="checkbox" class="captcha__checkbox">
+              <span class="captcha__checkmark"></span>
+              <span class="captcha__text">I'm not a robot</span>
+            </label>
+            <div class="captcha__logo">
+              <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA">
+            </div>
+          </div>
+
+          <div class="registration-form__footer">
+            <button class="registration-form__link" @click="toggleForm">
+              {{ isLogin ? "Don't have an account" : "Already have an account" }}
+            </button>
+            <button @click="changePage" type="submit" class="registration-form__submit-btn" @submit.prevent>{{ isLogin ? 'Log in' : 'Create account' }}</button>
+          </div>
+        </form>
       </div>
 
-      <div v-if="!isLogin" class="registration-form__row">
-        <div class="registration-form__field">
-          <label class="registration-form__label">Firstname</label>
-          <input type="text" class="registration-form__input" placeholder="Type your firstname...">
-        </div>
-        <div class="registration-form__field">
-          <label class="registration-form__label">Lastname</label>
-          <input type="text" class="registration-form__input" placeholder="Type your lastname...">
-        </div>
-      </div>
+    </section>
 
-      <div class="registration-form__field">
-        <label class="registration-form__label">Email</label>
-        <input type="email" class="registration-form__input" placeholder="Type email to identify you...">
-      </div>
 
-      <div class="registration-form__field">
-        <label class="registration-form__label">Password</label>
-        <input type="password" class="registration-form__input" placeholder="Type password...">
-      </div>
-
-      <div v-if="!isLogin" class="registration-form__captcha captcha">
-        <label class="captcha__container">
-          <input type="checkbox" class="captcha__checkbox">
-          <span class="captcha__checkmark"></span>
-          <span class="captcha__text">I'm not a robot</span>
-        </label>
-        <div class="captcha__logo">
-          <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA">
-        </div>
-      </div>
-
-      <div class="registration-form__footer">
-        <button class="registration-form__link" @click="toggleForm">
-          {{ isLogin ? "Don't have an account" : "Already have an account" }}
-        </button>
-        <button @click="changePage" type="submit" class="registration-form__submit-btn" @submit.prevent>{{ isLogin ? 'Log in' : 'Create account' }}</button>
-      </div>
-    </form>
-  </div>
 </template>
 
 <style scoped lang="css">
+
+
+#registration {
+  width: 100vw;
+  height: 100vh;
+  background: var(--body-background);
+  margin-top: 0;
+  padding-top: 60px;
+}
 
 .registration-form {
   background-color: var(--main-background-color);
   padding: 40px;
   border-radius: 10px;
-  width: 100%;
   max-width: 600px;
-  margin: 50px auto;
+  margin: auto;
+  /*height: 100%; */
 }
 
 .registration-form__title {

@@ -39,7 +39,7 @@ onUnmounted(() => clearInterval(timer));
 
 .timer {
   font-size: 14px;
-  color: #666;
+  color: var(--secondary-text-color);
   text-align: center;
   margin-top: 15px;
 }

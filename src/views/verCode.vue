@@ -45,30 +45,43 @@ const handlePaste = (event) => {
 </script>
 
 <template>
-  <div class="verification-container">
-    <div class="code-card">
-      <h3 class="title">Verification code</h3>
 
-      <div class="inputs-group" @paste="handlePaste">
-        <input
-            v-for="(digit, index) in codeLength"
-            :key="index"
-            ref="inputs"
-            v-model="code[index]"
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            @input="handleInput(index, $event)"
-            @keydown="handleKeyDown(index, $event)"
-        />
+  <section id="verification">
+
+    <div class="verification-container">
+      <div class="code-card">
+        <h3 class="title">Verification code</h3>
+
+        <div class="inputs-group" @paste="handlePaste">
+          <input
+              v-for="(digit, index) in codeLength"
+              :key="index"
+              ref="inputs"
+              v-model="code[index]"
+              type="text"
+              maxlength="1"
+              inputmode="numeric"
+              @input="handleInput(index, $event)"
+              @keydown="handleKeyDown(index, $event)"
+          />
+        </div>
       </div>
+
+      <Timer :seconds="120" />
     </div>
 
-    <Timer :seconds="120" />
-  </div>
+  </section>
+
 </template>
 
 <style lang="scss" scoped>
+
+#verification {
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--body-background);
+}
+
 .verification-container {
   display: flex;
   flex-direction: column;
@@ -89,7 +102,7 @@ const handlePaste = (event) => {
   text-align: center;
   margin: 15px 0;
   font-weight: 500;
-  color: #333;
+  color: var(--main-text-color);
 }
 
 .inputs-group {
@@ -105,7 +118,7 @@ const handlePaste = (event) => {
     border-right: 1px solid #dcdcdc;
     text-align: center;
     font-size: 32px;
-    color: #555;
+    color: var(--main-text-color);
     outline: none;
     transition: background 0.2s;
 
@@ -114,7 +127,7 @@ const handlePaste = (event) => {
     }
 
     &:focus {
-      background: #f9f9f9;
+      background: var(--hover-background-color);
     }
   }
 }

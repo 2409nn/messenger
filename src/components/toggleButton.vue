@@ -102,6 +102,6 @@ input:checked + .slider:before {
 .label-text {
   font-family: sans-serif;
   font-size: 14px;
-  color: #333;
+  color: var(--main-text-color);
 }
 </style>

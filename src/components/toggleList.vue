@@ -37,7 +37,7 @@
       <p class="toggleList__toggle-title">{{ title }}</p>
 
       <svg class="toggleList__toggle-btn" v-if="buttonType === 'arrow'" :class="{'active': isActive}" width="9" height="15" viewBox="0 0 9 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1.27841 1.27836L7.27841 7.29537L1.27841 13.3124" stroke="black" stroke-width="2.55681" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M1.27841 1.27836L7.27841 7.29537L1.27841 13.3124" stroke="currentColor" stroke-width="2.55681" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
 
     </button>
@@ -64,14 +64,19 @@
         flex-direction: row;
         gap: 20px;
         align-items: center;
+        color: var(--main-text-color);
+        stroke: white !important;
       }
+
 
       &-title {
         margin-left: 15px;
+        color: var(--main-text-color);
       }
 
       &-btn {
         margin-left: auto;
+        color: var(--main-text-color);
 
         &.active {
           transform: rotate(90deg);
