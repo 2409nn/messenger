@@ -3,10 +3,11 @@ import sideMenu from "@/components/sideMenu.vue"
 import Chats from "@/components/chats.vue"
 import conversation from "@/components/conversation.vue"
 import accountSettings from "@/components/accountSettings.vue"
-import UserSearch from "@/components/userSearch.vue";
+import UserSearch from "@/components/userSearch.vue"
 import mobileHeader from "@/components/mobileHeader.vue"
 
 import { ref } from "vue";
+
 
 const isSettingsOpen = ref(false);
 const isSearchOpen = ref(false);
@@ -18,11 +19,13 @@ function handleUpdateSettings(payload) {
 
 function handleUpdateSearch(payload) {
   isSearchOpen.value = payload;
+  console.log(payload);
 }
 
 function handleUpdatePage(payload) {
   activePage.value = payload;
 }
+
 
 </script>
 
@@ -38,7 +41,10 @@ function handleUpdatePage(payload) {
       v-model:is-popup-visible="isSettingsOpen"
   />
 
-  <mobile-header />
+  <mobileHeader
+      :search=true
+      :burger-menu=true
+      @search-clicked="handleUpdateSearch" />
 
   <main>
     <side-menu

@@ -2,7 +2,9 @@
   import switcher from "./switcher.vue"
   import recentMessages from "./recentMessages.vue"
   import recentGroupMessages from "./recentGroupMessages.vue"
+
   import { ref } from "vue"
+
 
   defineProps(["activePage"])
   const currentTab = ref("Chat");
@@ -16,6 +18,7 @@
 <!-- todo: сделать заглушку если чат не выбран -->
 
 <template>
+
   <section class="chats">
     <div class="chats__heading heading">
       <h2 class="chats__heading-title">Recent {{ activePage }}</h2>
