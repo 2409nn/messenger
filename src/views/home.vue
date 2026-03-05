@@ -14,6 +14,7 @@ const isSettingsOpen = ref(false);
 const isSearchOpen = ref(false);
 const activePage = ref("chats");
 const isBurgerOpen = ref(false);
+const activeChat = ref(null);
 
 const dropMenuBtns = [
   {title: "Clear messages", onClickFn: () => {
@@ -33,7 +34,6 @@ function handleUpdateSettings(payload) {
 
 function handleUpdateSearch(payload) {
   isSearchOpen.value = payload;
-  console.log(payload);
 }
 
 function handleUpdatePage(payload) {
@@ -42,7 +42,11 @@ function handleUpdatePage(payload) {
 
 function handleUpdateDropMenu(payload) {
   isBurgerOpen.value = !isBurgerOpen.value;
+}
 
+function handleUpdateChat(payload) {
+  activeChat.value = payload;
+  console.log(payload);
 }
 
 
@@ -64,7 +68,6 @@ function handleUpdateDropMenu(payload) {
 
   <mobileHeader
       :search=true
-
       @search-clicked="handleUpdateSearch"
       @burger-clicked="handleUpdateDropMenu"
   />
@@ -76,7 +79,7 @@ function handleUpdateDropMenu(payload) {
         @search-clicked="handleUpdateSearch"
         @page-clicked="handleUpdatePage"/>
 
-    <chats :active-page="activePage" />
-    <conversation @burger-clicked="handleUpdateDropMenu" />
+    <chats :active-page="activePage" @click-chat="handleUpdateChat"/>
+    <conversation @burger-clicked="handleUpdateDropMenu" :active-chat=activeChat />
   </main>
 </template>

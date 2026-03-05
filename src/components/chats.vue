@@ -7,15 +7,18 @@
 
 
   defineProps(["activePage"])
+  const emit = defineEmits(["clickChat"])
   const currentTab = ref("Chat");
 
-  const handleEmit = (playload) => {
-    currentTab.value = playload;
+  const handleEmit = (payload) => {
+    currentTab.value = payload;
+  }
+
+  const handleChatClick = (payload) => {
+    emit("clickChat", payload);
   }
 
 </script>
-
-<!-- todo: сделать заглушку если чат не выбран -->
 
 <template>
 
@@ -24,9 +27,10 @@
       <h2 class="chats__heading-title">Recent {{ activePage }}</h2>
     </div>
     <switcher @switch="handleEmit" firstName="Chat" secondName="Group" v-if="activePage === 'chats'"></switcher>
-    <recent-messages v-if="currentTab === 'Chat'" :active-page=activePage></recent-messages>
+    <recent-messages v-if="currentTab === 'Chat'" :active-page=activePage @click-chat="handleChatClick"></recent-messages>
     <recentGroupMessages v-if="currentTab === 'Group'"></recentGroupMessages>
   </section>
+
 </template>
 
 <style scoped lang="scss">

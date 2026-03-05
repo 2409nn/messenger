@@ -1,10 +1,23 @@
 <script setup>
   import userAvatar1 from '@/assets/imgs/avatars/user_1.jpg'
   import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg'
-  // import { defineEmits } from "vue"
-  // import { handleUpdateDropMenu } from '@/views/home.vue'
+  import { computed } from "vue"
+  import emptyState from "@/components/emptyState.vue"
 
-  const emit = defineEmits(['burgerClicked'])
+  const emit = defineEmits(['burgerClicked']);
+  const props = defineProps({
+    activeChat: {
+      type: Object,
+      default: () => ({}) // Для объектов в props default должен быть функцией
+    },
+    chatData: Object // Предположим, данные приходят отсюда
+  });
+
+  const currentMessages = computed(() => {
+    // Проверяем, есть ли в объекте нужное свойство
+    const index = props.activeChat?.index;
+    return (index && chatData[index]) ? chatData[index].messages : [];
+  });
 
   const onBurgerClicked = () => {
 
@@ -12,106 +25,52 @@
   }
 
   let chatData = {
+    user_1: {
       messages: [
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Gee, its been good news all day. i met someone special today. she's really pretty.
-           i’ll like to talk more about it but it has to be tomorrow. she should grab a drink later.
-
-           Call me if you get this okay.`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar2,
-          'title': 'Me',
-          'text': `Lorem ipsum dolor sit amet consectetur. Dictum sociis fermentum sodales nisl interdum id eget.
-          Eget libero viverra tristique massa fringilla sit..`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Lorem ipsum dolor sit amet consectetur. Pellentesque sagittis sed dictum lorem. Neque eget faucibus
-          dolor risus posuere vitae sodales. Sit odio morbi dolor egestas sit aliquam velit cum.
-          Pharetra tortor sit vestibulum `,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Gee, its been good news all day. i met someone special today. she's really pretty.
-           i’ll like to talk more about it but it has to be tomorrow. she should grab a drink later.
-
-           Call me if you get this okay.`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar2,
-          'title': 'Me',
-          'text': `Lorem ipsum dolor sit amet consectetur. Dictum sociis fermentum sodales nisl interdum id eget.
-          Eget libero viverra tristique massa fringilla sit..`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Lorem ipsum dolor sit amet consectetur. Pellentesque sagittis sed dictum lorem. Neque eget faucibus
-          dolor risus posuere vitae sodales. Sit odio morbi dolor egestas sit aliquam velit cum.
-          Pharetra tortor sit vestibulum `,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Gee, its been good news all day. i met someone special today. she's really pretty.
-           i’ll like to talk more about it but it has to be tomorrow. she should grab a drink later.
-
-           Call me if you get this okay.`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar2,
-          'title': 'Me',
-          'text': `Lorem ipsum dolor sit amet consectetur. Dictum sociis fermentum sodales nisl interdum id eget.
-          Eget libero viverra tristique massa fringilla sit..`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Lorem ipsum dolor sit amet consectetur. Pellentesque sagittis sed dictum lorem. Neque eget faucibus
-          dolor risus posuere vitae sodales. Sit odio morbi dolor egestas sit aliquam velit cum.
-          Pharetra tortor sit vestibulum `,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Gee, its been good news all day. i met someone special today. she's really pretty.
-           i’ll like to talk more about it but it has to be tomorrow. she should grab a drink later.
-
-           Call me if you get this okay.`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar2,
-          'title': 'Me',
-          'text': `Lorem ipsum dolor sit amet consectetur. Dictum sociis fermentum sodales nisl interdum id eget.
-          Eget libero viverra tristique massa fringilla sit..`,
-        },
-        {'time': '4:27',
-          avatar: userAvatar1,
-          'title': 'Ope',
-          'text': `Lorem ipsum dolor sit amet consectetur. Pellentesque sagittis sed dictum lorem. Neque eget faucibus
-          dolor risus posuere vitae sodales. Sit odio morbi dolor egestas sit aliquam velit cum.
-          Pharetra tortor sit vestibulum `,
-        },
+        { time: '09:15', avatar: userAvatar1, title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
+        { time: '09:42', avatar: userAvatar2, title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
+        { time: '10:05', avatar: userAvatar1, title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
+        { time: '12:30', avatar: userAvatar2, title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' }
       ]
-  }
+    },
+    user_2: {
+      messages: [
+        { time: '11:20', avatar: userAvatar1, title: 'Ope', text: 'Did you see the latest project feedback? The client wants us to redesign the entire footer by tomorrow.' },
+        { time: '11:45', avatar: userAvatar2, title: 'Me', text: 'Again? We just finalized everything yesterday. I’ll take a look at the Jira ticket now.' },
+        { time: '14:10', avatar: userAvatar1, title: 'Ope', text: 'I managed to hop on a quick call with them. Good news: we have until Friday to submit the changes.' },
+        { time: '14:15', avatar: userAvatar2, title: 'Me', text: 'Huge relief. In that case, I’ll finish the chat logic first before touching the CSS.' }
+      ]
+    },
+    user_3: {
+      messages: [
+        { time: '15:00', avatar: userAvatar1, title: 'Ope', text: 'Hey, do you still have that link to the Vue 3 documentation you shared last week?' },
+        { time: '15:05', avatar: userAvatar2, title: 'Me', text: 'Sure thing: vuejs.org. They just updated the section on Composition API and provide/inject.' },
+        { time: '15:10', avatar: userAvatar1, title: 'Ope', text: 'Perfect, thanks! I was getting stuck with some nested event emits.' },
+        { time: '16:00', avatar: userAvatar1, title: 'Ope', text: 'By the way, using the bracket notation for dynamic keys worked like a charm. Cheers!' }
+      ]
+    },
+    user_4: {
+      messages: [
+        { time: '18:20', avatar: userAvatar1, title: 'Ope', text: 'I’m already at the bar. Where are you? It’s getting crowded, so I grabbed a table in the corner.' },
+        { time: '18:35', avatar: userAvatar2, title: 'Me', text: 'Be there in 5 minutes, just looking for parking. Order me a cold one, please!' },
+        { time: '18:36', avatar: userAvatar1, title: 'Ope', text: 'Done. Also, that special person I mentioned this morning? She just walked in.' },
+        { time: '18:40', avatar: userAvatar2, title: 'Me', text: 'No way! That was fast. Okay, I’m coming inside now.' }
+      ]
+    }
+  };
 
 </script>
 
 <template>
-  <section class="conv">
+  <section v-if="activeChat" class="conv">
     <div class="conv__heading heading">
       <div class="conv__userinfo">
         <div class="conv__userinfo-avatar">
-          <img src="../assets/imgs/avatars/user_1.jpg" alt="avatar" class="conv__userinfo-image">
+          <img :src="activeChat.avatar" alt="avatar" class="conv__userinfo-image">
         </div>
         <div class="conv__userinfo-online online-tag"></div>
         <div class="conv__userinfo-title">
-          <h2 class="conv__userinfo-username">Ope</h2>
+          <h2 class="conv__userinfo-username">{{ activeChat.firstname }} {{ activeChat.lastname }}</h2>
           <h4 class="conv__userinfo-status">Active</h4>
         </div>
       </div>
@@ -137,7 +96,7 @@
     <div class="conv__chat">
       <div class="conv__messages">
 
-        <div class="conv__message" v-for="message in chatData.messages">
+        <div class="conv__message" v-for="message in currentMessages">
           <img :src="message.avatar" alt="avatar" class="conv__message-avatar">
 
           <div class="conv__message__info">
@@ -190,6 +149,7 @@
       </form>
     </div>
   </section>
+  <emptyState class="conv__emptyState" v-if="!activeChat" title="Chat is not selected" />
 </template>
 
 <style scoped lang="scss">
@@ -201,6 +161,14 @@
     grid-template-rows: 87px auto 87px;
     display: grid;
     max-height: 100vh;
+
+    &__emptyState {
+      max-height: 100vh;
+      grid-column: 6/17;
+      align-content: center;
+      margin: 0;
+      background-color: var(--main-background-color);
+    }
 
     &__chat {
       overflow-y: scroll;

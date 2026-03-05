@@ -65,12 +65,20 @@
 
   });
 
+  const emit = defineEmits(["clickChat"])
+
+  const onClickChat = (index, avatar, firstname, lastname) => {
+    activeIndex.value = index;
+    emit("clickChat", {'index': index, 'avatar': avatar, 'firstname': firstname, 'lastname': lastname});
+  }
+
 </script>
 
 <template>
   <div class="recent">
     <ul class="recent__chats">
-      <li class="recent__chat" v-for="(user, index) in showData" @click="activeIndex=index" :class="{ active: activeIndex === index }">
+      <li class="recent__chat" v-for="(user, index) in showData" @click="onClickChat(index, user.avatar, user.firstname, user.lastname)"
+          :class="{ active: activeIndex === index }">
         <div class="recent__avatar">
           <img class="recent__avatar-img" :src="user.avatar" alt="avatar">
           <div class="recent__avatar-online online"></div>
