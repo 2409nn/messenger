@@ -94,14 +94,9 @@
 <style scoped lang="scss">
 
   .sidebar {
+    height: 100vh;
     background-color: var(--body-background);
     grid-column: 1/2;
-    height: fit-content;
-    z-index: 20;
-  }
-
-  .sidebar {
-    height: 100vh;
 
     .sidebar__item {
       text-align: center;
@@ -147,6 +142,7 @@
       grid-row: 2;
       grid-column: 1/17;
       height: auto;
+      z-index: 100;
     }
 
     .sidebar nav {
@@ -167,6 +163,11 @@
     .sidebar {
       grid-column: 1/2 !important;
       grid-row: 2/3;
+      z-index: 20;
+      position: fixed;
+      bottom: 10px;
+      margin: auto;
+      width: 100%;
     }
 
     .sidebar nav {
@@ -181,9 +182,6 @@
 
   @media (max-width: 440px) {
 
-    .sidebar {
-      height: 100%;
-    }
     .sidebar nav {
       padding: 20px;
       gap: 20px;

@@ -30,6 +30,7 @@
   overflow: hidden;
   right: 0;
   top: 6%;
+  z-index: 100;
 
   &__buttons {
     list-style: none;
@@ -45,6 +46,7 @@
     background: none;
     cursor: pointer;
     border-bottom: 1px solid var(--divider-border-color);
+    color: var(--main-text-color);
 
     &:hover {
       background-color: var(--hover-background-color);

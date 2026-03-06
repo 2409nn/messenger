@@ -165,6 +165,11 @@
     grid-template-rows: 87px auto 87px;
     display: grid;
     max-height: 100vh;
+    z-index: 20;
+
+    @media (max-width: 740px) {
+      grid-template-rows: auto 87px;
+    }
 
     &__emptyState {
       height: 100vh;
@@ -221,6 +226,10 @@
       background-color: var(--body-background);
       justify-content: space-between;
       padding: 10px 20px;
+
+      @media (max-width: 740px) {
+        display: none;
+      }
     }
 
     &__userinfo {

@@ -71,13 +71,11 @@
 
 .userSearch {
   visibility: hidden;
-  width: 700px;
+  width: var(--modal-width);
   height: 550px;
   max-height: 550px;
 
-  position: absolute;
-  left: calc(50% - 700px/2);
-  top: calc(50% - 550px/2 - 100px);
+
   overflow: hidden;
   transform: translateX(-100px);
 

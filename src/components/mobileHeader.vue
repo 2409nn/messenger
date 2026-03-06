@@ -113,6 +113,10 @@
       display: block;
     }
 
+    svg {
+      color: var(--main-text-color);
+    }
+
     button {
       background: none;
       border: none;
@@ -134,11 +138,15 @@
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 26px;
+      }
+
+      &-item button {
+        padding-left: 15px;
       }
 
       &-title {
         text-align: center;
+        color: var(--main-text-color);
       }
     }
   }

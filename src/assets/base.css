@@ -15,7 +15,9 @@
   --submit-background-color: #EEEEEE;
   --danger-color: #E04E4E;
   --placeholder-color: #A0A0A0;
-  --modal-z-index: 10;
+  --modal-z-index: 100;
+    --header-height: 54px;
+    --modal-width: 600px;
 }
 
 [data-theme='dark'] {
@@ -26,6 +28,9 @@
   --accent-color: #64ffda;
   --submit-background-color: #684D4D;
   --focus-background-color: #393939;
+    --divider-border-color: rgba(90, 90, 90, 0.4);
+    --sidebar__item_svg-background: #262626;
+    --hover-background-color: rgba(255, 255, 255, 0.06);
 }
 
 * {
@@ -44,8 +49,17 @@ html, body {
   color: var(--main-text-color);
 }
 
+header {
+    height: var(--header-height);
+}
+
 .popup {
   z-index: var(--modal-z-index);
+    left: calc(50% - var(--modal-width)/2) !important;
+    position: absolute !important;
+    top: 10vh !important;
+    padding: 30px 20px !important;
+    width: var(--modal-width) !important;
 }
 
 button, a {
@@ -58,7 +72,7 @@ button, a {
     stroke: var(--main-text-color);
 }
 
-.closeBtn .path {
+.closeBtn path {
     color: var(--main-text-color);
 }
 
@@ -110,15 +124,10 @@ textarea::placeholder {
 
 @media (max-width: 940px) {
   main {
-    grid-template-rows: 85% 15%;
-    max-height: 100vh !important;
+    grid-template-rows: 100%;
+      max-height: calc(100vh - 84px);
     gap: 0 !important;
-  }
 
-  .sidebar {
-    grid-row: 2;
-    grid-column: 1/17 !important;
-    height: auto !important;
   }
 
   .chats {
@@ -160,6 +169,13 @@ textarea::placeholder {
   main {
     grid-template-columns: repeat(2, 100%) !important;
     overflow-x: hidden;
+      max-height: calc(100vh - var(--header-height));
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+
+      &::-webkit-scrollbar {
+          display: none;
+      }
   }
 
   .chats {
@@ -174,12 +190,31 @@ textarea::placeholder {
   .conv {
     grid-column: 2/3 !important;
     visibility: visible;
-    transition: transform 0.4s;
+    transition: transform 0.2s;
   }
 
   .conv.active {
     transform: translateX(-100%) !important;
-    transition: transform 0.4s;
+    transition: transform 0.2s;
   }
+
+}
+
+@media(max-width: 640px) {
+    .popup {
+        width: calc(var(--modal-width) - 180px) !important;
+        left: calc(50% - calc(var(--modal-width) - 180px) / 2) !important;
+    }
+
+    input::placeholder, textarea::placeholder {
+        font-size: 12px;
+    }
+}
+
+@media(max-width: 420px) {
+    .popup {
+        width: 90% !important;
+        left: calc(50% - calc(90%/2)) !important;
+    }
 
 }

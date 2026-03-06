@@ -191,12 +191,9 @@
 
 <style scoped lang="scss">
   .accountSettings {
-    width: 600px;
     height: fit-content;
     max-height: 660px;
-    padding: 30px 20px;
-    left: calc(50% - 600px / 2);
-    top: calc(50% - 900px / 2);
+
     overflow: scroll;
     scrollbar-width: none;
     -ms-overflow-style: none;

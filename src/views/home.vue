@@ -73,7 +73,10 @@ function handleUpdateCloseBtn(payload) {
 
   <mobileHeader
       :search=true
-      :close-btn="Boolean(activeChat)"
+      :close-btn="isChatOpen"
+      :title="isChatOpen ? 'Iskanderious' : ''"
+      :burger-menu="isChatOpen"
+      :call="isChatOpen"
       @search-clicked="handleUpdateSearch"
       @burger-clicked="handleUpdateDropMenu"
       @close-clicked="handleUpdateCloseBtn"
