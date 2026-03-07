@@ -6,14 +6,15 @@ import accountSettings from "@/components/accountSettings.vue"
 import UserSearch from "@/components/userSearch.vue"
 import mobileHeader from "@/components/mobileHeader.vue"
 
-import { ref } from "vue";
-import DropMenu from "@/components/dropMenu.vue";
-
+import { ref } from "vue"
+import DropMenu from "@/components/dropMenu.vue"
+import { onClickOutside } from "@vueuse/core"
 
 const isSettingsOpen = ref(false);
 const isSearchOpen = ref(false);
 const activePage = ref("chats");
 const isBurgerOpen = ref(false);
+const burgerDOM = ref(null);
 const activeChat = ref(null);
 const isChatOpen = ref(false);
 
@@ -28,6 +29,11 @@ const dropMenuBtns = [
     console.log("report user");
     }},
 ]
+
+onClickOutside(burgerDOM, () => {
+  isBurgerOpen.value = false;
+  console.log(burgerDOM);
+})
 
 function handleUpdateSettings(payload) {
   isSettingsOpen.value = payload;
@@ -69,12 +75,12 @@ function handleUpdateCloseBtn(payload) {
       v-model:is-popup-visible="isSettingsOpen"
   />
 
-  <drop-menu :buttons=dropMenuBtns v-if="isBurgerOpen"></drop-menu>
+  <drop-menu :buttons=dropMenuBtns v-if="isBurgerOpen" ref="burgerDOM"></drop-menu>
 
   <mobileHeader
       :search=true
       :close-btn="isChatOpen"
-      :title="isChatOpen ? 'Iskanderious' : ''"
+      :title="isChatOpen ? activeChat.firstname : ''"
       :burger-menu="isChatOpen"
       :call="isChatOpen"
       @search-clicked="handleUpdateSearch"
