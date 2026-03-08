@@ -5,6 +5,7 @@ import conversation from "@/components/conversation.vue"
 import accountSettings from "@/components/accountSettings.vue"
 import UserSearch from "@/components/userSearch.vue"
 import mobileHeader from "@/components/mobileHeader.vue"
+import contextMenu from "@/components/contextMenu.vue"
 
 import { ref } from "vue"
 import DropMenu from "@/components/dropMenu.vue"
@@ -15,24 +16,52 @@ const isSearchOpen = ref(false);
 const activePage = ref("chats");
 const isBurgerOpen = ref(false);
 const burgerDOM = ref(null);
+const contextDOM = ref(null);
 const activeChat = ref(null);
 const isChatOpen = ref(false);
 
 const dropMenuBtns = [
-  {title: "Clear messages", onClickFn: () => {
+  {title: "Clear messages", danger: true, onClickFn: () => {
       console.log("clear messages")
   }},
-  {title: "Block user", onClickFn: () => {
+  {title: "Block user", danger: true, onClickFn: () => {
       console.log("block user");
     }},
-  {title: "Report", onClickFn: () => {
+  {title: "Report", danger: true, onClickFn: () => {
     console.log("report user");
+    }},
+]
+
+const contextMessageBtns = [
+  {title: "Reply", onClickFn: () => {
+      console.log("replied message");
+    }},
+  {title: "Edit", onClickFn: () => {
+      console.log("replied message");
+    }},
+  {title: "Copy", onClickFn: () => {
+      console.log("Copied message");
+    }},
+  {title: "Forward", onClickFn: () => {
+      console.log("Forwarded message");
+    }},
+  {title: "Select", onClickFn: () => {
+      console.log("Selected");
+    }},
+  {title: "Report", onClickFn: () => {
+      console.log("reported");
+    }},
+  {title: "Delete", danger:true, onClickFn: () => {
+      console.log("Deleted message");
     }},
 ]
 
 onClickOutside(burgerDOM, () => {
   isBurgerOpen.value = false;
-  console.log(burgerDOM);
+})
+
+onClickOutside(contextDOM, () => {
+  contextElement.value = '';
 })
 
 function handleUpdateSettings(payload) {
@@ -60,6 +89,24 @@ function handleUpdateCloseBtn(payload) {
   isChatOpen.value = false;
 }
 
+const pos = ref({x: 0, y: 0});
+const contextElement = ref('');
+
+function handleContextMenu(event) {
+  event.preventDefault();
+  pos.value.x = event.clientX;
+  pos.value.y = event.clientY;
+  let elementClass = event.target.className;
+
+  // если клик по сообщению:
+  if (elementClass.startsWith("conv__message")) {
+    contextElement.value = 'message';
+  }
+  else {
+    contextElement.value = '';
+  }
+}
+
 
 </script>
 
@@ -75,7 +122,8 @@ function handleUpdateCloseBtn(payload) {
       v-model:is-popup-visible="isSettingsOpen"
   />
 
-  <drop-menu :buttons=dropMenuBtns v-if="isBurgerOpen" ref="burgerDOM"></drop-menu>
+  <contextMenu :buttons=contextMessageBtns :position=pos v-if="contextElement" :element=contextElement ref="contextDOM" />
+  <drop-menu :buttons=dropMenuBtns v-if="isBurgerOpen" ref="burgerDOM" />
 
   <mobileHeader
       :search=true
@@ -88,7 +136,7 @@ function handleUpdateCloseBtn(payload) {
       @close-clicked="handleUpdateCloseBtn"
   />
 
-  <main>
+  <main @contextmenu="handleContextMenu" >
     <side-menu
         @settings-clicked="handleUpdateSettings"
         @search-clicked="handleUpdateSearch"

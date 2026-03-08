@@ -1,20 +1,28 @@
 <script setup>
 
-  const props = defineProps({
-    buttons: {
-      type: Array,
-      required: true,
-    },
-  })
+const props = defineProps({
+  buttons: {
+    type: Array,
+    required: true,
+  },
+  position: {
+    type: {x: 0, y: 0},
+    required: true,
+  },
+  element: {
+    type: String,
+    required: true,
+  }
+})
 
 </script>
 
 
 <template>
-  <div class="dropMenu">
-    <ul class="dropMenu__buttons">
-      <li v-for="(btn, index) in props.buttons" :key="index" class="dropMenu__item">
-        <button class="dropMenu__button" @click="btn.onClickFn" :class="{'dangerBtn': btn.danger}">
+  <div class="contextMenu" :style="{'top': position.y + 'px', left: position.x + 'px'}">
+    <ul class="contextMenu__buttons">
+      <li v-for="(btn, index) in props.buttons" :key="index" class="contextMenu__item">
+        <button class="contextMenu__button" :class="{'dangerBtn': btn.danger}" @click="btn.onClickFn">
           {{ btn.title }}
         </button>
       </li>
@@ -23,7 +31,7 @@
 </template>
 
 <style scoped lang="scss">
-.dropMenu {
+.contextMenu {
   position: absolute;
   background: var(--main-background-color);
   width: fit-content;
@@ -32,9 +40,7 @@
   border: 1px solid var(--divider-border-color);
   text-align: center;
   overflow: hidden;
-  right: 10px;
-  top: 6%;
-  z-index: 100;
+  z-index: 110;
 
   &__buttons {
     list-style: none;
@@ -45,7 +51,7 @@
   &__button {
     display: block;
     width: 100%;
-    padding: 10px 20px; // Немного увеличил для удобства
+    padding: 5px;
     border: none;
     background: none;
     cursor: pointer;
@@ -59,7 +65,6 @@
     &:hover {
       background-color: var(--hover-background-color);
     }
-
   }
 
   &__item:last-child {
