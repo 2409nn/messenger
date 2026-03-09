@@ -4,7 +4,7 @@
   import { computed } from "vue"
   import emptyState from "@/components/emptyState.vue"
 
-  const emit = defineEmits(['burgerClicked']);
+  const emit = defineEmits(['burgerClicked', 'audioCallClicked', 'videoCallClicked']);
   const props = defineProps({
     activeChat: {
       type: Object,
@@ -62,6 +62,10 @@
     }
   };
 
+  const onAudioCallClick = () => {
+    emit('audioCallClicked', true);
+  }
+
 </script>
 
 <template>
@@ -78,7 +82,7 @@
         </div>
       </div>
       <div class="conv__buttons">
-        <button class="conv__buttons-button">
+        <button class="conv__buttons-button" @click="onAudioCallClick">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M0 2.57143C0 1.15127 1.15127 0 2.57143 0H3.74711C4.48457 0 5.1274 0.501906 5.30627 1.21735L6.25409 5.00865C6.41092 5.63597 6.17652 6.29618 5.65922 6.68416L4.5504 7.51577C4.43526 7.60213 4.41023 7.72858 4.44257 7.81687C5.41587 10.4738 7.52615 12.5841 10.1831 13.5574C10.2714 13.5898 10.3979 13.5647 10.4842 13.4496L11.3158 12.3408C11.7038 11.8235 12.364 11.5891 12.9913 11.7459L16.7826 12.6937C17.4981 12.8726 18 13.5154 18 14.2529V15.4286C18 16.8487 16.8487 18 15.4286 18H13.5C6.04416 18 0 11.9558 0 4.5V2.57143Z" fill="currentColor"/>
           </svg>

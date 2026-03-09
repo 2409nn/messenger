@@ -16,8 +16,10 @@
   --danger-color: #E04E4E;
   --placeholder-color: #A0A0A0;
   --modal-z-index: 100;
-    --header-height: 54px;
-    --modal-width: 600px;
+  --header-height: 54px;
+  --modal-width: 600px;
+  --call-height: 410px;
+  --call-width: 420px;
 }
 
 [data-theme='dark'] {

@@ -6,6 +6,7 @@ import accountSettings from "@/components/accountSettings.vue"
 import UserSearch from "@/components/userSearch.vue"
 import mobileHeader from "@/components/mobileHeader.vue"
 import contextMenu from "@/components/contextMenu.vue"
+import callWindow from "@/components/callWindow.vue"
 
 import { ref } from "vue"
 import DropMenu from "@/components/dropMenu.vue"
@@ -19,6 +20,7 @@ const burgerDOM = ref(null);
 const contextDOM = ref(null);
 const activeChat = ref(null);
 const isChatOpen = ref(false);
+const isCallActive = ref(false);
 
 const dropMenuBtns = [
   {title: "Clear messages", danger: true, onClickFn: () => {
@@ -89,6 +91,14 @@ function handleUpdateCloseBtn(payload) {
   isChatOpen.value = false;
 }
 
+function handleCallClick(payload) {
+  isCallActive.value = true;
+}
+
+function handleCallEnded(payload) {
+  isCallActive.value = false;
+}
+
 const pos = ref({x: 0, y: 0});
 const contextElement = ref('');
 
@@ -136,6 +146,8 @@ function handleContextMenu(event) {
       @close-clicked="handleUpdateCloseBtn"
   />
 
+  <callWindow :active="isCallActive" @call-ended="handleCallEnded" />
+
   <main @contextmenu="handleContextMenu" >
     <side-menu
         @settings-clicked="handleUpdateSettings"
@@ -143,6 +155,8 @@ function handleContextMenu(event) {
         @page-clicked="handleUpdatePage"/>
 
     <chats :active-page="activePage" @click-chat="handleUpdateChat"/>
-    <conversation @burger-clicked="handleUpdateDropMenu" :active-chat=activeChat :is-chat-open="isChatOpen" />
+    <conversation
+        @audio-call-clicked="handleCallClick"
+        @burger-clicked="handleUpdateDropMenu" :active-chat=activeChat :is-chat-open="isChatOpen" />
   </main>
 </template>
