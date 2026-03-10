@@ -21,6 +21,7 @@ const contextDOM = ref(null);
 const activeChat = ref(null);
 const isChatOpen = ref(false);
 const isCallActive = ref(false);
+const isVideoCall = ref(false);
 
 const dropMenuBtns = [
   {title: "Clear messages", danger: true, onClickFn: () => {
@@ -146,7 +147,7 @@ function handleContextMenu(event) {
       @close-clicked="handleUpdateCloseBtn"
   />
 
-  <callWindow :active="isCallActive" @call-ended="handleCallEnded" />
+  <callWindow :active="isCallActive" :is-video="isVideoCall" @call-ended="handleCallEnded" />
 
   <main @contextmenu="handleContextMenu" >
     <side-menu
@@ -156,7 +157,8 @@ function handleContextMenu(event) {
 
     <chats :active-page="activePage" @click-chat="handleUpdateChat"/>
     <conversation
-        @audio-call-clicked="handleCallClick"
+        @audio-call-clicked="() => { handleCallClick(); isVideoCall = false }"
+        @video-call-clicked="() => { handleCallClick(); isVideoCall = true }"
         @burger-clicked="handleUpdateDropMenu" :active-chat=activeChat :is-chat-open="isChatOpen" />
   </main>
 </template>
