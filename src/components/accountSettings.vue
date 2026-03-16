@@ -1,7 +1,7 @@
 <script setup>
   import toggleList from "./toggleList.vue"
   import toggleButton from "./toggleButton.vue"
-  import { ref, reactive } from 'vue'
+  import {ref, reactive, onMounted, onUnmounted, watch} from 'vue'
   import profile_default from '../assets/imgs/avatars/profile_default.png'
 
   // доступ к localStorage через Pinia
@@ -46,6 +46,14 @@
     }
   };
 
+  const autoSwitchTheme = () => {
+    const now = new Date();
+    if (now.getHours() >= 18 || now.getHours() <= 6) { settings.darkMode = true; }
+    else { settings.darkMode = false; }
+  }
+
+  let interval
+
   const userData = reactive({
     username: userName.value,
     firstname: firstName.value,
@@ -79,6 +87,29 @@
 
     console.log(firstName.value);
   }
+
+  // ежеминутная проверка времени для автоматической смены темы
+
+  function startInterval() {
+    if (settings.autoSwitchTheme) {
+      interval = setInterval(autoSwitchTheme, 60000);
+    }
+    else {
+      clearInterval(interval);
+    }
+  }
+
+  watch(() => settings.autoSwitchTheme, () => {
+    startInterval();
+  })
+
+  onMounted(() => {
+    startInterval();
+  })
+
+  onUnmounted(() => {
+    clearInterval(interval);
+  })
 
 </script>
 
@@ -205,7 +236,7 @@
 
             <li class="accountSettings__preferences__list-item">
               <toggle-button class="accountSettings__preferences__list-btn" @update:model-value="toggleDark" label="Dark mode" :model-value="settings.darkMode"></toggle-button>
-              <toggle-button class="accountSettings__preferences__list-btn" @update:model-value="(isActive) => {settings.autoSwitchTheme = isActive}" label="Automatically switch theme"></toggle-button>
+              <toggle-button class="accountSettings__preferences__list-btn" @update:model-value="(isActive) => {settings.autoSwitchTheme = isActive; startInterval()}" label="Automatically switch theme"></toggle-button>
             </li>
 
           </ul>

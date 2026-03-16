@@ -25,6 +25,8 @@
     }
   })
 
+  const emit = defineEmits(["update:isActive"])
+
   const active = ref(props.isActive);
 
   watch(() => props.isActive, (newVal) => {
@@ -40,8 +42,8 @@
     <p class="confirm__text">{{ text }}</p>
 
     <div class="confirm__buttons">
-      <button class="confirm__button confirm__button-no" @click="() => {noCase(); active = false}">No</button>
-      <button class="confirm__button confirm__button-yes" @click="() => {yesCase(); active = false}">Yes</button>
+      <button class="confirm__button confirm__button-no" @click="() => {props.noCase(); active = false; emit('update:isActive', active)}">No</button>
+      <button class="confirm__button confirm__button-yes" @click="() => {props.yesCase(); active = false; emit('update:isActive', active)}">Yes</button>
     </div>
   </div>
 </template>

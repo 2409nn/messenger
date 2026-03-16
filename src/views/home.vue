@@ -31,6 +31,11 @@ const activePage = ref("chats");
 const alertText = ref('You have unsaved changes that will be lost if you leave this page. Are you sure you want to proceed?');
 const alertIsActive = ref(false);
 
+const confirmText = ref("");
+const confirmIsActive = ref(false);
+const onConfirmYes = ref(() => {});
+const onConfirmNo = ref(() => {});
+
 // DOM объекты элементов
 const burgerDOM = ref(null);
 const mainDOM = ref(null)
@@ -42,15 +47,23 @@ const handleCallAlert = (payload) => {
   alertIsActive.value = true;
 }
 
+
 const chatMenuBtns = [
   {title: "Clear messages", danger: true, onClickFn: () => {
-      console.log("clear messages")
+    confirmText.value = "Messages of this chat will be irreversibly removed for both users. Are you sure?";
+    confirmIsActive.value = true;
+    onConfirmYes.value = () => {console.log("Messages are removed");}
+      onConfirmNo.value = () => {}
   }},
   {title: "Block user", danger: true, onClickFn: () => {
       console.log("block user");
+      alertText.value = "User is blocked";
+      alertIsActive.value = true;
     }},
   {title: "Report", danger: true, onClickFn: () => {
     console.log("report user");
+      alertText.value = "Report was sent to Nuclear support";
+      alertIsActive.value = true;
     }},
 ]
 
@@ -159,7 +172,7 @@ function handleCreatedData (payload) {
 
 <template>
 
-  <confirm :is-active="false" :yes-case="() => {console.log('zopa')}" :no-case="() => {console.log('piska')}" />
+  <confirm :text="confirmText" v-model:is-active="confirmIsActive" :yes-case="onConfirmYes" :no-case="onConfirmNo" />
 
   <alert :is-active="alertIsActive" v-model:is-active="alertIsActive" :text="alertText" :on-ok="() => {console.log('bombardiro crocodilo')}"></alert>
 
@@ -209,6 +222,7 @@ function handleCreatedData (payload) {
     <conversation
         @audio-call-clicked="() => { handleCallClick(); isVideoCall = false }"
         @video-call-clicked="() => { handleCallClick(); isVideoCall = true }"
+        @call-alert="handleCallAlert"
         @burger-clicked="handleUpdateDropMenu" :active-chat=activeChat :is-chat-open="isChatOpen" />
   </main>
 </template>
