@@ -7,12 +7,17 @@
   import user3 from '@/assets/imgs/avatars/user_3.jpg'
   import user4 from '@/assets/imgs/avatars/user_4.jpg'
   import EmptyState from "@/components/emptyState.vue";
+  import counter from "@/components/counter.vue";
 
   const props = defineProps({
     activePage: {
       type: String,
       default: 'chats'
     },
+    isChatOpen: {
+      type: Boolean,
+      default: false
+    }
   })
 
   const activeIndex = ref(null);
@@ -65,8 +70,12 @@
   const emit = defineEmits(["clickChat"])
 
   const onClickChat = (index, avatar, firstname, lastname) => {
+    let tempIndex = activeIndex.value
     activeIndex.value = index;
-    emit("clickChat", {'index': index, 'avatar': avatar, 'firstname': firstname, 'lastname': lastname});
+    if (tempIndex === index && props.isChatOpen) {
+      activeIndex.value = null;
+    }
+    emit("clickChat", {'index': activeIndex.value, 'avatar': avatar, 'firstname': firstname, 'lastname': lastname});
   }
 
 </script>
@@ -75,7 +84,7 @@
   <div class="recent">
     <ul class="recent__chats">
       <li class="recent__chat" v-for="(user, index) in showData" @click="onClickChat(index, user.avatar, user.firstname, user.lastname)"
-          :class="{ active: activeIndex === index }">
+          :class="{ active: activeIndex === index && props.isChatOpen }">
         <div class="recent__avatar">
           <img class="recent__avatar-img" :src="user.avatar" alt="avatar">
           <div class="recent__avatar-online online"></div>
@@ -84,6 +93,7 @@
           <div class="recent__info-top">
             <p class="recent__info-firstname">{{ user.firstname }}</p>
             <p class="recent__info-time">{{ user.time }}</p>
+            <counter class="recent__info-newMessages" :count="1232213" />
           </div>
           <p class="recent__info-message">{{ user.message }}</p>
         </div>
@@ -140,6 +150,7 @@
     }
 
     &__info {
+      width: 100%;
 
       &-top {
         display: flex;
@@ -151,14 +162,26 @@
         font-weight: 500;
       }
 
+      &-newMessages {
+        margin-left: auto;
+      }
+
       &-time {
         color: var(--secondary-text-color);
         font-weight: 200;
       }
 
       &-message {
+        display: -webkit-box;
         color: var(--secondary-text-color);
         font-weight: 300;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;    /* Показываем 4 строки */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+
+        line-height: 1.5;         /* Высота одной строки */
+        max-height: 6em;
       }
     }
 

@@ -168,6 +168,10 @@
       &-title {
         text-align: center;
         color: var(--main-text-color);
+        overflow: hidden;
+        text-wrap: nowrap;
+        max-width: 30vw;
+        text-overflow: ellipsis;
       }
     }
   }

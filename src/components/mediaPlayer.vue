@@ -74,11 +74,11 @@ const closeButton = () => {
     min-height: 200px;
     overflow: hidden;
     text-align: center;
+    width: 100%;
 
     &-preview {
-      width: 100%;
-      max-width: 700px;
       border-radius: 10px;
+      width: 100%;
     }
   }
 

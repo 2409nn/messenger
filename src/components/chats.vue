@@ -6,7 +6,7 @@
   import { ref } from "vue"
 
 
-  defineProps(["activePage"])
+  defineProps(["activePage", "isChatOpen"])
   const emit = defineEmits(["clickChat"])
   const currentTab = ref("Chat");
 
@@ -27,7 +27,7 @@
       <h2 class="chats__heading-title">Recent {{ activePage }}</h2>
     </div>
     <switcher @switch="handleEmit" firstName="Chat" secondName="Group" v-if="activePage === 'chats'"></switcher>
-    <recent-messages v-if="currentTab === 'Chat'" :active-page=activePage @click-chat="handleChatClick"></recent-messages>
+    <recent-messages v-if="currentTab === 'Chat'" :active-page=activePage @click-chat="handleChatClick" :is-chat-open="isChatOpen"></recent-messages>
     <recentGroupMessages v-if="currentTab === 'Group'"></recentGroupMessages>
   </section>
 

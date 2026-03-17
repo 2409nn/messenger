@@ -10,7 +10,7 @@ import callWindow from "@/components/callWindow.vue"
 import confirm from "@/components/confirm.vue"
 import alert from "@/components/alert.vue"
 import createWindow from "@/components/createWindow.vue"
-
+import preloader from "@/components/preloader.vue"
 
 import { ref } from "vue"
 import DropMenu from "@/components/dropMenu.vue"
@@ -67,8 +67,6 @@ const chatMenuBtns = [
     }},
 ]
 
-const mainMenuBtns = []
-
 const contextMessageBtns = [
   {title: "Reply", onClickFn: () => {
       console.log("replied message");
@@ -90,6 +88,17 @@ const contextMessageBtns = [
     }},
   {title: "Delete", danger:true, onClickFn: () => {
       console.log("Deleted message");
+    }},
+];
+const contextChatBtns = [
+  {title: "Clear chat", danger:true, onClickFn: () => {
+      console.log("Clear chat");
+    }},
+  {title: "Delete", danger:true, onClickFn: () => {
+      console.log("Deleted message");
+    }},
+  {title: "Block user", danger:true, onClickFn: () => {
+      console.log("Block user");
     }},
 ]
 
@@ -129,7 +138,7 @@ function handleCreateClick (payload) {
 
 function handleUpdateChat(payload) {
   activeChat.value = payload;
-  isChatOpen.value = true;
+  isChatOpen.value = payload.index !== null ? true : false;
 }
 
 function handleUpdateCloseBtn(payload) {
@@ -146,7 +155,7 @@ function handleCallEnded(payload) {
 
 const pos = ref({x: 0, y: 0});
 const contextElement = ref('');
-
+const contextMenuBtns = ref(null);
 
 function handleContextMenu (event) {
   event.preventDefault();
@@ -157,7 +166,14 @@ function handleContextMenu (event) {
   // если клик по сообщению:
   if (elementClass.startsWith("conv__message")) {
     contextElement.value = 'message';
+    contextMenuBtns.value = contextMessageBtns;
   }
+  // если клик по чату:
+  else if (elementClass.startsWith("recent__")) {
+    contextElement.value = 'chat';
+    contextMenuBtns.value = contextChatBtns;
+  }
+
   else {
     contextElement.value = '';
   }
@@ -176,6 +192,8 @@ function handleCreatedData (payload) {
 
   <alert :is-active="alertIsActive" v-model:is-active="alertIsActive" :text="alertText" :on-ok="() => {console.log('bombardiro crocodilo')}"></alert>
 
+  <preloader />
+
   <user-search
       :class="{'active': isSearchOpen}"
       v-model:is-popup-visible="isSearchOpen"
@@ -192,16 +210,17 @@ function handleCreatedData (payload) {
       v-model:is-popup-visible="isSettingsOpen"
   />
 
-  <contextMenu :buttons=contextMessageBtns :position=pos v-if="contextElement" :element=contextElement ref="contextDOM" />
+  <contextMenu :buttons='contextMenuBtns'
+               :position=pos v-if="contextElement" :element=contextElement ref="contextDOM" />
   <drop-menu :buttons='isChatOpen ? chatMenuBtns : mainMenuBtns' v-if="isBurgerOpen" :position=pos ref="burgerDOM" />
 
   <mobileHeader
-      :search=true
+      :search="!isChatOpen"
       :close-btn="isChatOpen"
       :title="isChatOpen ? activeChat.firstname : ''"
-      :burger-menu="true"
+      :burger-menu="isChatOpen"
       :call="isChatOpen"
-      :create-btn="true"
+      :create-btn="!isChatOpen"
       @create-clicked="handleCreateClick"
       @search-clicked="handleUpdateSearch"
       @burger-clicked="handleUpdateDropMenu"
@@ -218,7 +237,7 @@ function handleCreatedData (payload) {
         @create-clicked="handleCreateClick"
         @page-clicked="handleUpdatePage"/>
 
-    <chats :active-page="activePage" @click-chat="handleUpdateChat"/>
+    <chats :active-page="activePage" :is-chat-open="isChatOpen" @click-chat="handleUpdateChat"/>
     <conversation
         @audio-call-clicked="() => { handleCallClick(); isVideoCall = false }"
         @video-call-clicked="() => { handleCallClick(); isVideoCall = true }"

@@ -76,10 +76,10 @@
     <form class="createWindow__form" ref="formDOM" @submit.prevent="">
 
       <label class="createWindow__label" for="createWindow__space-name">Name</label>
-      <input placeholder="Type name here..." type="text" id="createWindow__space-name" v-model="spaceName">
+      <input maxlength="100" placeholder="Type name here..." type="text" id="createWindow__space-name" v-model="spaceName">
 
       <label class="createWindow__label" for="createWindow__space-description">Description</label>
-      <textarea id="createWindow__space-description" placeholder="Type description here..." v-model="spaceDescription"></textarea>
+      <textarea maxlength="1000" id="createWindow__space-description" placeholder="Type description here..." v-model="spaceDescription"></textarea>
 
       <toggleList title="Members" @click="contactsOpen = !contactsOpen">
       </toggleList>

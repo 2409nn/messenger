@@ -68,7 +68,7 @@ const props = defineProps({
   }
 
   &__item:last-child {
-    .dropMenu__button {
+    .contextMenu__button {
       border-bottom: none;
     }
   }

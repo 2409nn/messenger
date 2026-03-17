@@ -7,6 +7,7 @@
   import mediaPlayer from "@/components/mediaPlayer.vue"
   import bottomScroller from "@/components/bottomScroller.vue"
   import gifSender from "@/components/gifSender.vue"
+  import MessageStatus from "@/components/messageStatus.vue";
 
   const isMediaSender = ref(false);
   const isMediaPlayer = ref(false);
@@ -67,7 +68,7 @@
       chat: props.activeChat.index
     }
 
-    chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", media: previewMedia.value, mediaType: selectedMedia.value.type, text: mediaMessage.value.text, time: time});
+    chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", media: previewMedia.value, status: 'error', mediaType: selectedMedia.value.type, text: mediaMessage.value.text, time: time});
     mediaText.value = mediaMessage.value.text;
   }
 
@@ -86,46 +87,46 @@
   let chatData = reactive({
     user_1: {
       messages: [
-        { time: '09:15', avatar: userAvatar1, title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
+        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
+        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
+        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
+        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
+        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
+        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
+        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
+        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
+        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
+        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
+        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
+        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
+        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
+        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
+        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
+        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
       ]
     },
     user_2: {
       messages: [
-        { time: '11:20', avatar: userAvatar1, title: 'Ope', text: 'Did you see the latest project feedback? The client wants us to redesign the entire footer by tomorrow.' },
-        { time: '11:45', avatar: userAvatar2, title: 'Me', text: 'Again? We just finalized everything yesterday. I’ll take a look at the Jira ticket now.' },
-        { time: '14:10', avatar: userAvatar1, title: 'Ope', text: 'I managed to hop on a quick call with them. Good news: we have until Friday to submit the changes.' },
-        { time: '14:15', avatar: userAvatar2, title: 'Me', text: 'Huge relief. In that case, I’ll finish the chat logic first before touching the CSS.' }
+        { time: '11:20', avatar: userAvatar1, status: 'pending', title: 'Ope', text: 'Did you see the latest project feedback? The client wants us to redesign the entire footer by tomorrow.' },
+        { time: '11:45', avatar: userAvatar2, status: 'pending', title: 'Me', text: 'Again? We just finalized everything yesterday. I’ll take a look at the Jira ticket now.' },
+        { time: '14:10', avatar: userAvatar1, status: 'pending', title: 'Ope', text: 'I managed to hop on a quick call with them. Good news: we have until Friday to submit the changes.' },
+        { time: '14:15', avatar: userAvatar2, status: 'pending', title: 'Me', text: 'Huge relief. In that case, I’ll finish the chat logic first before touching the CSS.' }
       ]
     },
     user_3: {
       messages: [
-        { time: '15:00', avatar: userAvatar1, title: 'Ope', text: 'Hey, do you still have that link to the Vue 3 documentation you shared last week?' },
-        { time: '15:05', avatar: userAvatar2, title: 'Me', text: 'Sure thing: vuejs.org. They just updated the section on Composition API and provide/inject.' },
-        { time: '15:10', avatar: userAvatar1, title: 'Ope', text: 'Perfect, thanks! I was getting stuck with some nested event emits.' },
-        { time: '16:00', avatar: userAvatar1, title: 'Ope', text: 'By the way, using the bracket notation for dynamic keys worked like a charm. Cheers!' }
+        { time: '15:00', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'Hey, do you still have that link to the Vue 3 documentation you shared last week?' },
+        { time: '15:05', avatar: userAvatar2, status: 'delivered', title: 'Me', text: 'Sure thing: vuejs.org. They just updated the section on Composition API and provide/inject.' },
+        { time: '15:10', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'Perfect, thanks! I was getting stuck with some nested event emits.' },
+        { time: '16:00', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'By the way, using the bracket notation for dynamic keys worked like a charm. Cheers!' }
       ]
     },
     user_4: {
       messages: [
-        { time: '18:20', avatar: userAvatar1, title: 'Ope', text: 'I’m already at the bar. Where are you? It’s getting crowded, so I grabbed a table in the corner.' },
-        { time: '18:35', avatar: userAvatar2, title: 'Me', text: 'Be there in 5 minutes, just looking for parking. Order me a cold one, please!' },
-        { time: '18:36', avatar: userAvatar1, title: 'Ope', text: 'Done. Also, that special person I mentioned this morning? She just walked in.' },
-        { time: '18:40', avatar: userAvatar2, title: 'Me', text: 'No way! That was fast. Okay, I’m coming inside now.' }
+        { time: '18:20', avatar: userAvatar1, status: 'read', title: 'Ope', text: 'I’m already at the bar. Where are you? It’s getting crowded, so I grabbed a table in the corner.' },
+        { time: '18:35', avatar: userAvatar2, status: 'read', title: 'Me', text: 'Be there in 5 minutes, just looking for parking. Order me a cold one, please!' },
+        { time: '18:36', avatar: userAvatar1, status: 'read', title: 'Ope', text: 'Done. Also, that special person I mentioned this morning? She just walked in.' },
+        { time: '18:40', avatar: userAvatar2, status: 'read', title: 'Me', text: 'No way! That was fast. Okay, I’m coming inside now.' }
       ]
     }
   });
@@ -213,7 +214,7 @@
   <bottom-scroller :elementDOM="chatDOM" v-if="currentScroll > 400" />
 
   <section class="conv" :class="{'active': isChatOpen}" >
-    <div class="conv__heading heading" v-if="activeChat">
+    <div class="conv__heading heading" v-if="isChatOpen">
       <div class="conv__userinfo">
         <div class="conv__userinfo-avatar">
           <img :src="activeChat.avatar" alt="avatar" class="conv__userinfo-image">
@@ -243,7 +244,7 @@
         </button>
       </div>
     </div>
-    <div class="conv__chat" v-if="activeChat" ref="chatDOM" @scroll="onChatScroll">
+    <div class="conv__chat" v-if="isChatOpen" ref="chatDOM" @scroll="onChatScroll">
       <div class="conv__messages">
 
         <div class="conv__message" v-for="message in currentMessages" :class="{'own': message.title.toLocaleLowerCase() === 'me'}">
@@ -253,6 +254,7 @@
             <div class="conv__message__info-top">
               <span class="conv__message__info-top__title">{{ message.title }}</span>
               <span class="conv__message__info-top__time">{{ message.time }}</span>
+              <message-status class="conv__message__info-top__status" :status="message.status" />
             </div>
             <img class="conv__message-media" v-if="String(message.mediaType).startsWith('image/')" :src="message.media" @click="onMediaPlayer">
             <video class="conv__message-media" preload="metadata" v-if="String(message.mediaType).startsWith('video/')" :src="message.media" @click="onMediaPlayer"></video>
@@ -263,9 +265,9 @@
 
       </div>
     </div>
-    <div class="conv__send" v-if="activeChat">
+    <div class="conv__send" v-if="isChatOpen">
       <form class="conv__send__form" >
-        <input type="text" class="conv__send__form-text" placeholder="Type something..." v-model="typedText">
+        <input type="text" class="conv__send__form-text" maxlength="1000" placeholder="Type something..." v-model="typedText">
         <div class="conv__send__form-buttons">
           <button type="button" class="conv__send__form-buttons-button emoji-btn" @click="isGifs = true">
             <svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -303,7 +305,7 @@
       </form>
     </div>
 
-    <emptyState class="conv__emptyState" v-if="!activeChat" title="Chat is not selected" />
+    <emptyState class="conv__emptyState" v-if="!isChatOpen" title="Chat is not selected" />
   </section>
 </template>
 
@@ -324,6 +326,10 @@
     display: grid;
     max-height: 100vh;
     z-index: 20;
+    overflow-wrap: break-word;
+
+    /* Дополнительная страховка для старых браузеров и специфических случаев */
+    word-break: break-word;
 
     @media (max-width: 740px) {
       grid-template-rows: auto 87px;
@@ -364,6 +370,11 @@
         border-radius: 10px;
       }
 
+      &__info {
+        width: 100%;
+
+      }
+
       &__info-top {
         gap: 20px;
         display: flex;
@@ -372,12 +383,20 @@
 
         &__title {
           font-weight: 500;
+          max-width: 150px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         &__time {
           font-weight: 200;
           color: var(--secondary-text-color);
           font-size: 12px;
+        }
+
+        &__status {
+          margin-left: auto;
         }
       }
 
@@ -408,6 +427,10 @@
       &-username {
         font-size: 24px;
         font-weight: 500;
+        overflow: hidden;
+        text-wrap: nowrap;
+        max-width: 25vw;
+        text-overflow: ellipsis;
       }
 
       &-status {

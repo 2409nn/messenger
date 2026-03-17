@@ -18,8 +18,14 @@
   --modal-z-index: 100;
   --header-height: 54px;
   --modal-width: 600px;
+  --preloader-width: 320px;
   --call-height: 410px;
   --call-width: 420px;
+  --cyan-background: #4DD0FF;
+  --yellow-border: #FFDD81;
+  --yellow-background: #F9C92B;
+  --green-border: #94FF90;
+  --red-border: #E48F8F;
 }
 
 [data-theme='dark'] {
