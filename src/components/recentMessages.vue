@@ -93,9 +93,9 @@
           <div class="recent__info-top">
             <p class="recent__info-firstname">{{ user.firstname }}</p>
             <p class="recent__info-time">{{ user.time }}</p>
-            <counter class="recent__info-newMessages" :count="1232213" />
           </div>
           <p class="recent__info-message">{{ user.message }}</p>
+          <counter class="recent__info-newMessages" :count="1232213" />
         </div>
       </li>
     </ul>
@@ -163,7 +163,7 @@
       }
 
       &-newMessages {
-        margin-left: auto;
+        float: right;
       }
 
       &-time {

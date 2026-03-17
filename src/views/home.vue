@@ -192,7 +192,7 @@ function handleCreatedData (payload) {
 
   <alert :is-active="alertIsActive" v-model:is-active="alertIsActive" :text="alertText" :on-ok="() => {console.log('bombardiro crocodilo')}"></alert>
 
-  <preloader />
+<!--  <preloader />-->
 
   <user-search
       :class="{'active': isSearchOpen}"

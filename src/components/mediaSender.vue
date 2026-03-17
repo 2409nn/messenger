@@ -17,10 +17,12 @@ const emit = defineEmits(['update:isPopupVisible', 'onMediaSend']);
 
 const closeButton = () => {
   emit("update:isPopupVisible", false);
+  text.value = '';
 }
 
 const onSubmitClick = () => {
   emit("onMediaSend", {text: text.value, media: props.media});
+  text.value = '';
   closeButton();
 }
 

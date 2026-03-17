@@ -74,6 +74,7 @@
 
   function onMediaPlayer (event) {
     previewMedia.value = event.target.src;
+    mediaText.value = event.target.alt;
     isVideo.value = event.target.nodeName === "VIDEO";
 
     isMediaPlayer.value = true
@@ -256,7 +257,7 @@
               <span class="conv__message__info-top__time">{{ message.time }}</span>
               <message-status class="conv__message__info-top__status" :status="message.status" />
             </div>
-            <img class="conv__message-media" v-if="String(message.mediaType).startsWith('image/')" :src="message.media" @click="onMediaPlayer">
+            <img class="conv__message-media" v-if="String(message.mediaType).startsWith('image/')" :alt="message.text" :src="message.media" @click="onMediaPlayer">
             <video class="conv__message-media" preload="metadata" v-if="String(message.mediaType).startsWith('video/')" :src="message.media" @click="onMediaPlayer"></video>
 <!--            <p class="conv__message__info__video-length">{{ message.media.duration }}</p>-->
             <p class="conv__message__info__text">{{ message.text }}</p>

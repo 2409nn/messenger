@@ -1,7 +1,11 @@
 <script setup>
   const props = defineProps({
     title: { type: String, default: 'Loading data' },
+    fn: { type: Function, required: true },
   })
+
+  props.fn();
+
 </script>
 
 <template>
@@ -32,6 +36,7 @@
     &__heading {
       font-size: 14px;
       text-align: center;
+      color: var(--main-text-color);
     }
 
     &__progressbar {
