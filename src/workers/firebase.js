@@ -1,0 +1,111 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
+import {
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged,
+    browserLocalPersistence,
+    setPersistence,
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    linkWithCredential,
+    EmailAuthProvider
+} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+
+// Уникальная конфигурация firebase
+export const firebaseConfig = {
+    apiKey: "AIzaSyCD2w41tatMI1_vTe7sSYu-EDdwDXL4u3E",
+    authDomain: "nuclear-abf45.firebaseapp.com",
+    projectId: "nuclear-abf45",
+    storageBucket: "nuclear-abf45.firebasestorage.app",
+    messagingSenderId: "944211383454",
+    appId: "1:944211383454:web:0931bdfe117e19e2fd578f",
+    measurementId: "G-GJZNE8K0R2"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app); // для регистрации через почту и пароль
+export const provider = new GoogleAuthProvider(); // для регистрации через google
+
+setPersistence(auth, browserLocalPersistence); // при входе токен пользователя сохраняется в localStorage
+
+// Вход через Google
+export async function signInWithGoogle() {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        console.log("Вход выполнен:", result.user);
+        return result.user;
+
+    } catch (error) {
+        if (error.code === 'auth/account-exists-with-different-credential') {
+            // Пользователь уже зарегистрирован другим способом
+            const email = error.customData.email;
+            const pendingCred = GoogleAuthProvider.credentialFromError(error);
+
+            // Просим пользователя войти обычным способом
+            const password = prompt(`Аккаунт с ${email} уже существует. Введите пароль для привязки:`);
+
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            await linkWithCredential(userCredential.user, pendingCred);
+
+            alert('Аккаунт успешно объединён!');
+            return userCredential.user;
+        } else {
+            console.error("Google sign-in error:", error);
+            alert(`Ошибка входа: ${error.code || error.message}`);
+        }
+    }
+}
+
+// Вход через почту и пароль
+export async function signInWithEmail(email, password) {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    console.log("Вход по email:", result.user);
+    return result.user;
+}
+
+// Регистрация пользователя
+export async function registerWithEmail(email, password) {
+    try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("Регистрация по email:", result.user);
+        return result.user;
+    } catch (error) {
+        console.error("Ошибка регистрации:", error);
+        throw error;
+    }
+}
+
+// Выход пользователя (Будет внедрено в будущем)
+export async function signUserOut() {
+    await signOut(auth);
+    console.log("Пользователь вышел");
+}
+
+// Отслеживание состояния аккаунта пользователя (Будет внедрено в будущем)
+export function observeAuthState(callback) {
+    return onAuthStateChanged(auth, user => callback(user));
+}
+
+// Проверка правильности введенного пользователя
+export async function verifyUserPassword(email, password) {
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        return {
+            success: true,
+            user: userCredential.user
+        };
+    } catch (error) {
+        // Обрабатываем типичные ошибки
+        if (error.code === "auth/wrong-password") {
+            return {success: false, message: "Неверный пароль"};
+        } else if (error.code === "auth/user-not-found") {
+            return {success: false, message: "Пользователь не найден"};
+        } else if (error.code === "auth/too-many-requests") {
+            return {success: false, message: "Слишком много попыток входа. Попробуйте позже."};
+        } else {
+            return {success: false, message: "Ошибка проверки пароля"};
+        }
+    }
+}

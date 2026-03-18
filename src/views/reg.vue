@@ -1,6 +1,20 @@
 <script setup>
   import { ref } from 'vue'
   import { useRouter } from "vue-router"
+  import {
+    signInWithGoogle,
+    signUserOut,
+    observeAuthState,
+    auth,
+    signInWithEmail,
+    verifyUserPassword,
+    registerWithEmail,
+  } from '../workers/firebase.js';
+  import {
+    signInWithEmailAndPassword
+  } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+  import { db } from "../db/firebaseDB.js";
+
 
   const router = useRouter();
 
@@ -20,6 +34,38 @@
       router.push('/');
     }
   }
+
+  // копирование
+
+  // Элементы DOM
+
+  var accountStatus = "noAccount";
+
+  // Обработчик кнопки входа через Google
+  const onSubmitClick = async (e) => {
+    e.preventDefault();
+    try {
+      const user = await signInWithGoogle();
+      console.log('Google вход:', user);
+
+      // Проверяем, есть ли документ пользователя в базе
+      const existingUser = await db.getUserByEmail(user.email);
+      if (!existingUser) {
+        await db.addUser(
+            user.displayName || "Без имени",
+            user.email,
+            "Не указан"
+        );
+      }
+
+    } catch (e) {
+      console.error('Ошибка входа через Google:', e);
+    }
+  };
+
+  // Обработка нажатия кнопки регистрации/входа
+
+  // Переключение вкладки регистрации/входа
 
 </script>
 
@@ -72,7 +118,7 @@
             <button class="registration-form__link" @click="toggleForm">
               {{ isLogin ? "Don't have an account" : "Already have an account" }}
             </button>
-            <button @click="changePage" type="submit" class="registration-form__submit-btn" @submit.prevent>{{ isLogin ? 'Log in' : 'Create account' }}</button>
+            <button @click="onSubmitClick" type="submit" class="registration-form__submit-btn" @submit.prevent>{{ isLogin ? 'Log in' : 'Create account' }}</button>
           </div>
         </form>
       </div>
