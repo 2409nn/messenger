@@ -1,6 +1,6 @@
 <script setup>
   import { useSettingsStore } from "@/stores/settings.js";
-  // import CryptoWorker from "@/workers/crypto.worker?worker";
+  import CryptoWorker from "@/workers/crypto.worker?worker";
   import { ref } from "vue";
 
   const loadAccountSettings = async () => {
@@ -10,64 +10,84 @@
 
   loadAccountSettings()
 
-  // const message = ref('');
-  // const encryptedData = ref(null);
-  // const decryptedText = ref('');
-  // let worker = null;
-  //
-  // worker = new CryptoWorker();
-  //
-  // // Слушаем ответы от воркера
-  // worker.onmessage = (e) => {
-  //   const { type, payload } = e.data;
-  //
-  //   if (type === 'ENCRYPTED') {
-  //     encryptedData.value = payload;
-  //     console.log("Данные зашифрованы в воркере!");
-  //   }
-  //
-  //   if (type === 'DECRYPTED') {
-  //     decryptedText.value = payload;
-  //   }
-  //
-  //   if (type === 'ERROR') {
-  //     console.error("Ошибка в воркере:", payload);
-  //   }
-  // };
-  //
-  // // 2. Генерация ключей (делаем один раз при инициализации)
-  // // В реальном приложении ты бы достал их из IndexedDB
-  // const aliceKeys = await window.crypto.subtle.generateKey(
-  //     { name: "ECDH", namedCurve: "P-256" },
-  //     false,
-  //     ["deriveKey"]
-  // );
-  //
-  // // Для примера создадим sharedKey сразу (как будто обменялись с Бобом)
-  // // В жизни тут был бы deriveKey с публичным ключом собеседника
-  // const sharedKey = await window.crypto.subtle.deriveKey(
-  //     { name: "ECDH", public: aliceKeys.publicKey }, // просто для теста самого себя
-  //     aliceKeys.privateKey,
-  //     { name: "AES-GCM", length: 256 },
-  //     false,
-  //     ["encrypt", "decrypt"]
-  // );
-  //
-  // // 3. Отправляем ключ в воркер "на хранение"
-  // worker.postMessage({ type: 'INIT_KEY', payload: sharedKey });
-  //
-  // const handleEncrypt = () => {
-  //   worker.postMessage({ type: 'ENCRYPT', payload: message.value });
-  // };
-  //
-  // const handleDecrypt = () => {
-  //   if (encryptedData.value) {
-  //     worker.postMessage({type: 'DECRYPT', payload: encryptedData.value});
-  //     console.log(encryptedData.value);
-  //   }
-  // }
-  //
-  // handleDecrypt();
+
+  // ------- шифр -------// Путь к твоему воркеру
+
+  const bufferToBase64 = (buffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  };
+
+  const inputMessage = ref('Hello World');
+  const encryptedResult = ref(null);
+  const decryptedResult = ref('');
+
+  // Основная функция
+  const processCrypto = async () => {
+    try {
+      // 1. Генерируем реальный ключ (для теста генерируем симметричный AES)
+      // В твоем чате здесь будет результат deriveKey (ECDH)
+      const realKey = await window.crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+      );
+
+      // 2. Создаем воркер
+      const myWorker = new CryptoWorker();
+
+      // 3. Настраиваем прием ответов
+      myWorker.onmessage = (e) => {
+        const { command, data } = e.data;
+
+        if (command === 'READY') {
+          // console.log("Воркер готов, отправляем текст на шифрование...");
+          myWorker.postMessage({
+            command: 'ENCRYPT',
+            data: inputMessage.value
+          });
+        }
+
+        if (command === 'ENCRYPTED') {
+          encryptedResult.value = bufferToBase64(data.ciphertext);
+          // console.log("Успешно зашифровано в воркере:", data);
+          // console.log(encryptedResult.value);
+
+          // Сразу проверим дешифровку для теста
+          myWorker.postMessage({
+            command: 'DECRYPT',
+            data: data // передаем {ciphertext, iv}
+          });
+        }
+
+        if (command === 'DECRYPTED') {
+          decryptedResult.value = data;
+          // console.log("Успешно расшифровано в воркере:", data);
+          myWorker.terminate(); // Закрываем поток
+        }
+
+        if (command === 'ERROR') {
+          console.error("Ошибка в воркере:", data);
+          myWorker.terminate();
+        }
+      };
+
+      // 4. Инициализируем воркер ключом
+      myWorker.postMessage({
+        command: 'INIT_KEY',
+        key: realKey // ПЕРЕДАЕМ НАСТОЯЩИЙ ОБЪЕКТ КЛЮЧА
+      });
+
+    } catch (err) {
+      console.error("Ошибка в главном потоке:", err);
+    }
+  };
+
+  processCrypto();
 
 
 </script>

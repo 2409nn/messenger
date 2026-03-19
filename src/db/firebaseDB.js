@@ -11,10 +11,11 @@ import {
     query,
     where,
     getDoc,
+    Timestamp,
     getDocs as getQueryDocs
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 import {
-    getAuth
+    getAuth,
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import { firebaseConfig } from "../workers/firebase.js";
 
@@ -64,13 +65,14 @@ export class DataBase {
     }
 
     // сохранение пользователя в базу данных
-    async addUser(username, email, address, userId) {
+    async addUser(username, email, firstname, lastname, userId) {
         try {
             const userRef = doc(this.db, "users", userId);
             await setDoc(userRef, {
                 username,
                 email,
-                address,
+                firstname,
+                lastname,
                 createdAt: new Date()
             });
             console.log(`Пользователь добавлен с ID: ${userId}`);
@@ -79,6 +81,20 @@ export class DataBase {
         } catch (e) {
             console.error("Ошибка при добавлении пользователя:", e);
             return null;
+        }
+    }
+
+    // сохранение временного кода в базу данных
+    async addCode(code, uid) {
+        try {
+            const codeRef = doc(this.db, "codes", uid);
+            await setDoc(codeRef, {
+                code,
+                uid
+            }, {expireAt: Timestamp.fromDate(new Date(Date.now() + 2 * 60 * 1000 ))
+            })
+        } catch (error) {
+            console.error("Ошибка при сохранения кода:", error);
         }
     }
 
@@ -98,45 +114,6 @@ export class DataBase {
         }
     }
 
-    // Добавление товара в корзину
-    async addToCart(userId, imageURL, title, description, price) {
-        try {
-            const safeImageURL = encodeURIComponent(imageURL); // если передали некорректный URL, экранируем его
-            const cartRef = collection(this.db, "users", userId, "cart");
-            await addDoc(cartRef, {
-                imageURL: decodeURIComponent(safeImageURL), // храним как обычный URL
-                title,
-                description,
-                price,
-                createdAt: new Date()
-            });
-        } catch (e) {
-            console.error("Ошибка при добавлении товара:", e);
-        }
-    }
-
-    // Возвращает массив товаров в корзине пользователя
-    async getCartProducts(userId) {
-        try {
-            if (!userId) {
-                console.warn("Не указан userId при получении корзины");
-                return [];
-            }
-            const cartRef = collection(this.db, "users", userId, "cart");
-            const querySnapshot = await getDocs(cartRef);
-            const products = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            return products;
-
-        } catch (e) {
-            console.error("Ошибка при получении товаров корзины:", e);
-            return [];
-        }
-    }
-
     // Изменение данных о пользователе
     async updateUser(userId, newData) {
         try {
@@ -148,15 +125,6 @@ export class DataBase {
         }
     }
 
-    // Удаление продукта из коллекции корзины
-    async deleteCartProduct(userId, productId) {
-        try {
-            const productRef = doc(this.db, "users", userId, "cart", productId);
-            await deleteDoc(productRef);
-        } catch (e) {
-            console.error("Ошибка при удалении товара:", e);
-        }
-    }
 }
 
 export const db = new DataBase(firebaseConfig);

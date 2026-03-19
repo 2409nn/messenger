@@ -10,7 +10,7 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     linkWithCredential,
-    EmailAuthProvider
+    EmailAuthProvider,
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
 
 // Уникальная конфигурация firebase
@@ -24,11 +24,32 @@ export const firebaseConfig = {
     measurementId: "G-GJZNE8K0R2"
 };
 
+
+// ----- инициализация ------
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app); // для регистрации через почту и пароль
 export const provider = new GoogleAuthProvider(); // для регистрации через google
-
 setPersistence(auth, browserLocalPersistence); // при входе токен пользователя сохраняется в localStorage
+
+// Вход через почту и пароль
+export async function signInWithEmail(email, password) {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    // console.log("Вход по email:", result.user);
+
+    return result.user;
+}
+
+// Регистрация пользователя
+export async function registerWithEmail(email, password) {
+    try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("Регистрация по email:", result.user);
+        return result.user;
+    } catch (error) {
+        console.error("Ошибка регистрации:", error);
+        throw error;
+    }
+}
 
 // Вход через Google
 export async function signInWithGoogle() {
@@ -58,25 +79,6 @@ export async function signInWithGoogle() {
     }
 }
 
-// Вход через почту и пароль
-export async function signInWithEmail(email, password) {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    console.log("Вход по email:", result.user);
-    return result.user;
-}
-
-// Регистрация пользователя
-export async function registerWithEmail(email, password) {
-    try {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("Регистрация по email:", result.user);
-        return result.user;
-    } catch (error) {
-        console.error("Ошибка регистрации:", error);
-        throw error;
-    }
-}
-
 // Выход пользователя (Будет внедрено в будущем)
 export async function signUserOut() {
     await signOut(auth);
@@ -88,9 +90,10 @@ export function observeAuthState(callback) {
     return onAuthStateChanged(auth, user => callback(user));
 }
 
-// Проверка правильности введенного пользователя
+// вход через email и пароль
 export async function verifyUserPassword(email, password) {
     try {
+        console.log(auth);
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return {
             success: true,

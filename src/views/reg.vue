@@ -1,6 +1,9 @@
 <script setup>
   import { ref } from 'vue'
   import { useRouter } from "vue-router"
+  import alert from "../components/alert.vue"
+  import { sendCodeToEmail } from "../workers/sendCode.js"
+
   import {
     signInWithGoogle,
     signUserOut,
@@ -9,6 +12,7 @@
     signInWithEmail,
     verifyUserPassword,
     registerWithEmail,
+    // sendVerification,
   } from '../workers/firebase.js';
   import {
     signInWithEmailAndPassword
@@ -20,6 +24,9 @@
 
   // Состояние: true — форма логина, false — форма регистрации
   const isLogin = ref(false);
+  const alertTitle = ref('Error');
+  const alertText = ref('Registration error');
+  const isAlertActive = ref(false);
 
   const toggleForm = () => {
   isLogin.value = !isLogin.value;
@@ -35,32 +42,142 @@
     }
   }
 
-  // копирование
+  const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // базовая проверка email
+    return regex.test(email);
+  }
 
-  // Элементы DOM
+  const email = ref('');
+  const password = ref('');
+  const firstname = ref('');
+  const lastname = ref('');
+  const username = ref('');
 
-  var accountStatus = "noAccount";
-
-  // Обработчик кнопки входа через Google
+  // Обработчик кнопки входа
   const onSubmitClick = async (e) => {
     e.preventDefault();
-    try {
-      const user = await signInWithGoogle();
-      console.log('Google вход:', user);
 
-      // Проверяем, есть ли документ пользователя в базе
-      const existingUser = await db.getUserByEmail(user.email);
-      if (!existingUser) {
-        await db.addUser(
-            user.displayName || "Без имени",
-            user.email,
-            "Не указан"
-        );
+    // Проверяем корректность email
+    if (!validateEmail(email.value)) {
+      alertText.value = 'Invalid email';
+      isAlertActive.value = true;
+      return;
+    }
+
+    if (!isLogin.value) {
+      // Регистрация нового пользователя
+      try {
+
+        // Проверяем пароль
+        if (password.value.length < 6) {
+          alertText.value = "Password must be at least 6 characters";
+          isAlertActive.value = true;
+          return;
+        }
+
+        // Проверяем пустые ли поля
+        if (firstname.value.length === 0) {
+          alertText.value = "Please enter firstname";
+          isAlertActive.value = true;
+          return;
+        }
+
+        const user = await registerWithEmail(email.value, password.value);
+
+        if (user) {
+          await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя
+
+          await db.addUser(
+              username.value,
+              email.value,
+              firstname.value,
+              lastname.value,
+              user.uid).then(() => { changePage() })
+        }
+      }
+      catch (error) {
+
+        console.group("%cОшибка регистрации", "color: red; font-weight: bold;");
+        console.log("Код:", error.code);
+        console.log("Сообщение:", error.message);
+        console.groupEnd();
+
+        if (error.code === "auth/email-already-in-use") {
+          alertText.value = "Such email is already in use";
+          isAlertActive.value = true;
+        }
+
+        else if (error.code === "not-every-input-filled") {
+          alertText.value = "Please fill out all fields";
+          isAlertActive.value = true;
+        }
+
+        else {
+          alertText.value = "Could not register new account";
+          isAlertActive.value = true;
+        }
+
+      }
+    }
+    else {
+      try {
+        const loginResult = await verifyUserPassword(email.value, password.value);
+        if (loginResult.success) {
+          changePage();
+        } else {
+          const error = new Error("Invalid email or password");
+          error.code = "auth/invalid-credential";
+
+          throw error;
+        }
+      }
+      catch (error) {
+        console.error(error);
+        if (error.code === "auth/invalid-credential") {
+          alertText.value = error.message;
+          isAlertActive.value = true;
+        }
+
+        console.group("%cОшибка регистрации", "color: red; font-weight: bold;");
+        console.log("Код:", error.code);
+        console.log("Сообщение:", error.message);
+        console.groupEnd();
       }
 
-    } catch (e) {
-      console.error('Ошибка входа через Google:', e);
     }
+    // else if (accountStatus === "haveAccount") {
+    //   // === Вход существующего пользователя ===
+    //   try {
+    //     const loginResult = await verifyUserPassword(email, password);
+    //     if (loginResult.success) {
+    //       localStorage.setItem("email", email);
+    //       let userId = await db.getUserByEmail(email);
+    //       userId = userId.id;
+    //
+    //       localStorage.setItem("email", email);
+    //       localStorage.setItem("userId", userId);
+    //
+    //       window.location.href = './catalog.html';
+    //     }
+    //
+    //     else if (!loginResult.success) {
+    //       const error = new Error("Неверная почта или пароль");
+    //       error.code = "auth/invalid-credential";
+    //       throw error;
+    //     }
+    //
+    //   } catch (error) {
+    //
+    //     if (error.code === "auth/invalid-credential") {
+    //       alert(error.message);
+    //     }
+    //
+    //     console.group("%cОшибка регистрации", "color: red; font-weight: bold;");
+    //     console.log("Код:", error.code);
+    //     console.log("Сообщение:", error.message);
+    //     console.groupEnd();
+    //   }
+    // }
   };
 
   // Обработка нажатия кнопки регистрации/входа
@@ -71,6 +188,8 @@
 
 <template>
 
+    <alert :title="alertTitle" :text="alertText" :is-active="isAlertActive" :on-ok="() => {}" v-model:is-active="isAlertActive" />
+
     <section id="registration">
 
       <div class="registration-form" @submit.prevent>
@@ -79,28 +198,28 @@
         <form class="registration-form__container">
           <div v-if="!isLogin" class="registration-form__field">
             <label class="registration-form__label">Username</label>
-            <input type="text" class="registration-form__input" placeholder="Type username to find you...">
+            <input type="text" v-model="username" class="registration-form__input" placeholder="Type username to find you...">
           </div>
 
           <div v-if="!isLogin" class="registration-form__row">
             <div class="registration-form__field">
               <label class="registration-form__label">Firstname</label>
-              <input type="text" class="registration-form__input" placeholder="Type your firstname...">
+              <input type="text" v-model="firstname" class="registration-form__input" placeholder="Type your firstname...">
             </div>
             <div class="registration-form__field">
               <label class="registration-form__label">Lastname</label>
-              <input type="text" class="registration-form__input" placeholder="Type your lastname...">
+              <input type="text" v-model="lastname" class="registration-form__input" placeholder="Type your lastname...">
             </div>
           </div>
 
           <div class="registration-form__field">
             <label class="registration-form__label">Email</label>
-            <input type="email" class="registration-form__input" placeholder="Type email to identify you...">
+            <input v-model="email" type="email" class="registration-form__input" placeholder="Type email to identify you...">
           </div>
 
           <div class="registration-form__field">
             <label class="registration-form__label">Password</label>
-            <input type="password" class="registration-form__input" placeholder="Type password...">
+            <input v-model="password" type="password" class="registration-form__input" placeholder="Type password...">
           </div>
 
           <div v-if="!isLogin" class="registration-form__captcha captcha">
