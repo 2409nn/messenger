@@ -75,7 +75,8 @@ export class DataBase {
                 lastname,
                 createdAt: new Date()
             });
-            console.log(`Пользователь добавлен с ID: ${userId}`);
+            // console.log(`Пользователь добавлен с ID: ${userId}`);
+            localStorage.setItem("uid", userId);
             return userId;
 
         } catch (e) {
@@ -91,10 +92,28 @@ export class DataBase {
             await setDoc(codeRef, {
                 code,
                 uid
-            }, {expireAt: Timestamp.fromDate(new Date(Date.now() + 2 * 60 * 1000 ))
             })
         } catch (error) {
             console.error("Ошибка при сохранения кода:", error);
+        }
+    }
+
+    async getCode(uid) {
+        try {
+            const usersRef = collection(this.db, "codes");
+            const q = query(usersRef, where("uid", "==", uid));
+            const querySnapshot = await getQueryDocs(q);
+
+            if (querySnapshot.empty) {return null;} // Нет такого пользователя
+
+            // Если пользователь найден, возвращаем первый документ
+            const userDoc = querySnapshot.docs[0];
+            return {
+                ...userDoc.data()
+            };
+        } catch (e) {
+            console.error("Ошибка при поиске пользователя по email:", e);
+            return null;
         }
     }
 

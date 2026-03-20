@@ -20,9 +20,7 @@ export const sendCodeToEmail = async (email, uid) => {
             'QjoW_-j0AvIA09Gbp'
         );
 
-        console.log("Код отправлен на почту!");
-        console.log(verificationCode);
-
+        localStorage.setItem("codeCreatedAt", Date.now());
         await db.addCode(verificationCode, uid);
 
     } catch (error) {

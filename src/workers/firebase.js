@@ -43,7 +43,6 @@ export async function signInWithEmail(email, password) {
 export async function registerWithEmail(email, password) {
     try {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("Регистрация по email:", result.user);
         return result.user;
     } catch (error) {
         console.error("Ошибка регистрации:", error);

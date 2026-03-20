@@ -1,5 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { sendCodeToEmail } from "../workers/sendCode.js"
+import { userDataStore } from "@/stores/userData.js"
 
 const props = defineProps({
   seconds: {
@@ -8,7 +10,15 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(["resendClicked"]);
+
 const timeLeft = ref(props.seconds);
+
+watch(props.seconds, (newVal) => {
+  timeLeft.value = newVal;
+})
+
+const userData = userDataStore().userData;
 let timer = null;
 
 const formattedTime = computed(() => {
@@ -29,7 +39,7 @@ onUnmounted(() => clearInterval(timer));
 <template>
   <div class="timer">
     <span v-if="timeLeft > 0">Resend code in {{ formattedTime }}</span>
-    <button v-else class="resend-btn" @click="timeLeft = props.seconds">
+    <button v-else class="resend-btn" @click="() => {emit('resendClicked')}">
       Resend code
     </button>
   </div>

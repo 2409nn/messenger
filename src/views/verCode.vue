@@ -1,10 +1,20 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
+import { db } from "../db/firebaseDB.js"
 import Timer from '../components/timer.vue';
+import { useRouter } from "vue-router"
+import { sendCodeToEmail } from "@/workers/sendCode.js";
+import { userDataStore } from "@/stores/userData.js"
 
 const codeLength = 4;
 const code = reactive(new Array(codeLength).fill(""));
 const inputs = ref([]);
+const codeBorderClass = ref(null);
+const router = useRouter();
+const userData = userDataStore().userData;
+
+const createdTimeDiff = ref((Date.now() - new Date(Number(localStorage.getItem("codeCreatedAt")))) / 1000); // разница в секундах с момента создания кода
+const timerSeconds = Math.floor(Math.max(120 - createdTimeDiff.value, 0));
 
 const handleInput = (index, event) => {
   const val = event.data;
@@ -42,6 +52,30 @@ const handlePaste = (event) => {
   // Фокус на последнее заполненное поле или кнопку
   inputs.value[Math.min(pasteData.length, codeLength - 1)].focus();
 };
+
+const checkCode = async (code) => {
+  const uid = userData.uid;
+
+  db.getCode(uid).then((res) => {
+    if (res.code === code) {
+      codeBorderClass.value = "correct";
+      router.push('/');
+    }
+    else {
+      codeBorderClass.value = "incorrect";
+    }
+    return res.code === code;
+  });
+}
+
+// сравнивание кода только тогда, когда введен полный код
+watch(code, () => {
+  let codeLength = code.join('').length;
+  if (codeLength === 4) {
+    checkCode(code.join(''));
+  }
+})
+
 </script>
 
 <template>
@@ -49,7 +83,7 @@ const handlePaste = (event) => {
   <section id="verification">
 
     <div class="verification-container">
-      <div class="code-card">
+      <div class="code-card" :class="{'correct': codeBorderClass === 'correct', 'incorrect': codeBorderClass === 'incorrect'}">
         <h3 class="title">Verification code</h3>
 
         <div class="inputs-group" @paste="handlePaste">
@@ -67,7 +101,7 @@ const handlePaste = (event) => {
         </div>
       </div>
 
-      <Timer :seconds="120" />
+      <Timer :seconds="timerSeconds" @resend-clicked="() => {sendCodeToEmail(userData.email, userData.uid)}" />
     </div>
 
   </section>
@@ -96,6 +130,14 @@ const handlePaste = (event) => {
   padding: 0;
   overflow: hidden;
   width: 320px;
+
+  &.correct {
+    border: 1px solid var(--green-border);
+  }
+
+  &.incorrect {
+    border: 1px solid var(--danger-color);
+  }
 }
 
 .title {

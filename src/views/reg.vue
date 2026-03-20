@@ -3,6 +3,7 @@
   import { useRouter } from "vue-router"
   import alert from "../components/alert.vue"
   import { sendCodeToEmail } from "../workers/sendCode.js"
+  import { userDataStore } from "@/stores/userData.js"
 
   import {
     signInWithGoogle,
@@ -19,7 +20,7 @@
   } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
   import { db } from "../db/firebaseDB.js";
 
-
+  const userData = userDataStore().userData;
   const router = useRouter();
 
   // Состояние: true — форма логина, false — форма регистрации
@@ -85,6 +86,12 @@
         const user = await registerWithEmail(email.value, password.value);
 
         if (user) {
+          userData.email = user.email;
+          userData.firstname = user.firstname;
+          userData.lastname = user.lastname;
+          userData.username = user.username;
+          userData.uid = user.uid;
+
           await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя
 
           await db.addUser(
