@@ -73,6 +73,8 @@ export class DataBase {
                 email,
                 firstname,
                 lastname,
+                couch_db_name: `user_db_${userId}`,
+
                 createdAt: new Date()
             });
             // console.log(`Пользователь добавлен с ID: ${userId}`);
