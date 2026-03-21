@@ -7,7 +7,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node src/app.cjs\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -21,11 +21,14 @@
     "nano": "^11.0.4",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "pouchdb": "^9.0.0",
+    "pouchdb-browser": "^9.0.0",
     "vue": "^3.5.26",
     "vue-router": "^5.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",
+    "concurrently": "^9.2.1",
     "sass-embedded": "^1.97.2",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.5"

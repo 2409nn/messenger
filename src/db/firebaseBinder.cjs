@@ -1,5 +1,5 @@
 // Задачи файла: инициализировать админа и создать функцию для проверки токена, который пришлет фронтенд.
-const nano = require('nano')("http://admin:12345@127.0.0.1:5984");
+const nano = require('nano')("http://admin:12345@localhost:5984");
 
 var admin = require("firebase-admin");
 var serviceAccount = require("../API/nuclear-abf45-firebase-adminsdk-fbsvc-7dd90feb51.json");
@@ -54,9 +54,10 @@ async function registerInCouch(uid, password) {
     }
 }
 
-async function handleUserSync(uid) {
-    // const uid = await verifyUserAndRole(idToken).uid;
-    const password = "fuckingPassword123456";
+async function handleUserSync(idToken) {
+    const userData = await verifyUserAndRole(idToken);
+    const uid = userData.uid;
+    const password = "12345";
 
     // регистрация на couchDB
     await registerInCouch(uid, password);
@@ -78,16 +79,15 @@ async function handleUserSync(uid) {
 
     return { dbName, password };
 }
+//
+// async function testConnection() {
+//     try {
+//         const info = await nano.info();
+//         console.log("Ура! Связь с CouchDB установлена. Версия:", info.version);
+//     } catch (err) {
+//         console.error("Ошибка! Проверь пароль или запущен ли CouchDB:", err.message);
+//     }
+// }
 
-async function testConnection() {
-    try {
-        const info = await nano.info();
-        console.log("Ура! Связь с CouchDB установлена. Версия:", info.version);
-    } catch (err) {
-        console.error("Ошибка! Проверь пароль или запущен ли CouchDB:", err.message);
-    }
-}
-
-handleUserSync('RKC56Gh6WxO1MpSSpRxmj3aZLy52');
 
 module.exports = { verifyUserAndRole, handleUserSync, admin };

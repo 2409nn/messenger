@@ -4,6 +4,7 @@
   import alert from "../components/alert.vue"
   import { sendCodeToEmail } from "../workers/sendCode.js"
   import { userDataStore } from "@/stores/userData.js"
+  import { initLocalUserDB } from "@/db/pouchDB.js"
 
   import {
     signInWithGoogle,
@@ -84,6 +85,24 @@
         }
 
         const user = await registerWithEmail(email.value, password.value);
+
+        // отправка запроса к серверу, который синхронизируется с CouchDB
+        const token = await user.getIdToken();
+        const res = fetch('http://localhost:5005/auth-sync', {
+          method: 'POST',
+          body: JSON.stringify({ idToken: token }),
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        const data = await res;
+        try {
+          if (data.json().status === "success") {
+            const db = await initLocalUserDB(user.uid, data.dbName, data.password);
+          }
+        } catch (e) {
+          console.log("Ошибка от data.json()")
+          console.error(e);
+        }
 
         if (user) {
           userData.email = user.email;
