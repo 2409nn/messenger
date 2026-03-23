@@ -1,6 +1,5 @@
 <script setup>
   import { useSettingsStore } from "@/stores/settings.js";
-  import { userDataStore } from "@/stores/userData.js";
   import CryptoWorker from "@/workers/crypto.worker?worker";
   import { ref } from "vue";
 

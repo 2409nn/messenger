@@ -1,5 +1,5 @@
 // Задачи файла: инициализировать админа и создать функцию для проверки токена, который пришлет фронтенд.
-const nano = require('nano')("http://admin:12345@localhost:5984");
+const nano = require('nano')("http://admin:12345@localhost:5984"); // засекретить пароль
 
 var admin = require("firebase-admin");
 var serviceAccount = require("../API/nuclear-abf45-firebase-adminsdk-fbsvc-7dd90feb51.json");
@@ -33,6 +33,7 @@ async function verifyUserAndRole(idToken) {
 }
 
 async function registerInCouch(uid, password) {
+    const login = await nano.auth('admin', '12345');
     const usersDb = nano.use('_users'); // Системная база пользователей
     const userDocId = `org.couchdb.user:${uid}`; // ID должен быть именно в таком формате
 
@@ -57,37 +58,78 @@ async function registerInCouch(uid, password) {
 async function handleUserSync(idToken) {
     const userData = await verifyUserAndRole(idToken);
     const uid = userData.uid;
-    const password = "12345";
+    const password = "12345"; // засекретить пароль
 
     // регистрация на couchDB
     await registerInCouch(uid, password);
 
-    // 3. Создаем личную базу
+    // Создаем личную базу
     const dbName = `db_${uid.toLowerCase()}`;
     try {
         await nano.db.create(dbName);
 
-        // 4. Настраиваем СЕКЬЮРИТИ (Самое важное!)
         const db = nano.use(dbName);
-        await db.setSecurity({
+
+        const securityDoc = {
             admins: { names: ['admin'], roles: [] },
-            members: { names: [uid], roles: [] } // Только этот юзер может войти
+            members: { names: [uid], roles: [] }
+        };
+
+        // Отправляем PUT запрос прямо на /db_name/_security
+        // nano.request — это универсальный способ достучаться до любого API CouchDB
+        await nano.request({
+            db: dbName,
+            path: '_security',
+            method: 'PUT',
+            body: securityDoc
         });
     } catch (e) {
-        // База уже есть - ок
+        if (e.reason === 'The database could not be created, the file already exists.') {
+            console.log(`ℹ️ База ${dbName} уже существует, идем дальше.`);
+        } else {
+            // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
+            console.error(`❌ Ошибка создания базы ${dbName}:`, e.reason || e.message);
+            throw e;
+        }
     }
 
     return { dbName, password };
 }
-//
-// async function testConnection() {
-//     try {
-//         const info = await nano.info();
-//         console.log("Ура! Связь с CouchDB установлена. Версия:", info.version);
-//     } catch (err) {
-//         console.error("Ошибка! Проверь пароль или запущен ли CouchDB:", err.message);
-//     }
-// }
 
+async function createChatDB(idToken, dbName, uids) {
+    const userData = await verifyUserAndRole(idToken);
+    const uid = userData.uid;
+    const password = "12345"; // засекретить пароль
 
-module.exports = { verifyUserAndRole, handleUserSync, admin };
+    // регистрация на couchDB
+    await registerInCouch(uid, password);
+    try {
+        await nano.db.create(dbName);
+
+        const db = nano.use(dbName);
+
+        const securityDoc = {
+            admins: { names: ['admin'], roles: [] },
+            members: { names: uids, roles: [] }
+        };
+
+        // Отправляем PUT запрос прямо на /db_name/_security
+        // nano.request — это универсальный способ достучаться до любого API CouchDB
+        await nano.request({
+            db: dbName,
+            path: '_security',
+            method: 'PUT',
+            body: securityDoc
+        });
+    } catch (e) {
+        if (e.reason === 'The database could not be created, the file already exists.') {
+            console.log(`ℹ️ База ${dbName} уже существует, идем дальше.`);
+        } else {
+            // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
+            console.error(`❌ Ошибка создания базы ${dbName}:`, e.reason || e.message);
+            throw e;
+        }
+    }
+}
+
+module.exports = { verifyUserAndRole, handleUserSync, createChatDB, admin };

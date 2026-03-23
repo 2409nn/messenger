@@ -1,23 +1,57 @@
 <script setup>
 
-import profileDefault from "@/assets/imgs/avatars/profile_default.png"
+  import profileDefault from "@/assets/imgs/avatars/profile_default.png"
 
-  defineProps({
+  import { addUsersToChat, createChatDB } from "@/db/pouchDB.js"
+  import { userDataStore } from "@/stores/userData.js";
+
+
+  const props = defineProps({
     avatar: {
       type: String,
       default: profileDefault,
     },
-    firstName: String,
-    lastName: String,
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: false,
+      default: '',
+    },
     username: {
       type: String,
       required: false,
+      default: '',
+    },
+    uid: {
+      type: String,
+      required: true,
     }
   })
+
+  const emit = defineEmits(['cardClicked'])
+
+  const onCardClick = async () => {
+    emit('cardClicked', {firstName: props.firstName, lastName: props.lastName, username: props.username});
+    const userData = userDataStore().userData;
+
+    console.log(props.uid)
+
+    if (userData.uid !== props.uid) {
+      const chatDB = await createChatDB([userData.uid, props.uid]) // создаем чат
+      await addUsersToChat(chatDB, [userData.uid, props.uid]);
+
+    } else {
+      console.log("Нельзя написать самому себе (одинаковые uid)")
+    }
+  }
+
 </script>
 
 <template>
-  <div class="userCard">
+  <div class="userCard" @click="onCardClick">
     <img :src=avatar alt="avatar" class="userCard__avatar">
     <p class="userCard__firstname">{{ firstName }} {{ lastName }}</p>
     <p class="userCard__username">@{{ username }}</p>

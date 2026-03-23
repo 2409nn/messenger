@@ -5,6 +5,7 @@
   import Arlan from "@/assets/imgs/avatars/Arlan.jpg"
   import Juliana from "@/assets/imgs/avatars/Juliana.jpg"
   import Iskanderious from "@/assets/imgs/avatars/iskanderious.jpg"
+  import { getUserProfile } from "@/db/pouchDB.js";
 
   const isEmpty = ref(true)
   const emit = defineEmits(['update:isPopupVisible']);
@@ -13,34 +14,18 @@
   const closeButton = () => {
     emit("update:isPopupVisible", false);
   }
-
-  const availableUsers = [
-    {
-      username: "aufderheidebluhterika",
-      firstname: "Iskanderious",
-      avatar: Iskanderious
-    },
-    {
-      username: "hlebaloff",
-      firstname: "Arlan",
-      avatar: Arlan
-    },
-    {
-      username: "otchim6996",
-      firstname: "Shmanka",
-      avatar: Juliana
-    },
-  ]
-
   const foundUsers = ref([]);
 
   // функция напрямую делает запрос на базу данных
-  function makeSearchRequest () {
+  async function makeSearchRequest () {
 
     if (searchText.value.length > 0) {
-      foundUsers.value = availableUsers.filter(user =>
-          user.username.toLowerCase().startsWith(searchText.value.toLowerCase())
-      );
+      // получили профили из базы по поиску через query
+      const db = await getUserProfile();
+      let searchResults = await db.query('users/by_username', {startkey: searchText.value.toLowerCase(), endkey: searchText.value.toLowerCase() + '\ufff0', include_docs: true});
+      searchResults = searchResults.rows;
+
+      foundUsers.value = searchResults.map(row => row.doc);
 
       if (foundUsers.value.length > 0) {
         isEmpty.value = false;
@@ -53,8 +38,6 @@
       foundUsers.value = [];
     }
   }
-
-  console.log(foundUsers.value)
 
 
 </script>
@@ -84,7 +67,7 @@
     <div class="userSearch__found">
       <ul class="userSearch__found-users">
 
-        <li class="userSearch__found-user" v-for="user in foundUsers"><userCard :avatar="user.avatar" :first-name=user.firstname :username=user.username></userCard></li>
+        <li class="userSearch__found-user" v-for="user in foundUsers"><userCard :uid="user._id" :avatar="user.avatar" :first-name=user.firstname :username=user.username></userCard></li>
 
       </ul>
 

@@ -36,6 +36,7 @@ app.post('/auth-sync', async (req, res) => {
     }
 });
 
+
 const PORT = 5005;
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);

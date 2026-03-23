@@ -4,7 +4,7 @@
   import alert from "../components/alert.vue"
   import { sendCodeToEmail } from "../workers/sendCode.js"
   import { userDataStore } from "@/stores/userData.js"
-  import { initLocalUserDB } from "@/db/pouchDB.js"
+  import {initLocalUserDB, putUserProfile, saveDataPouchDB} from "@/db/pouchDB.js"
 
   import {
     signInWithGoogle,
@@ -96,19 +96,24 @@
 
         const data = await res;
         try {
-          if (data.json().status === "success") {
-            const db = await initLocalUserDB(user.uid, data.dbName, data.password);
+          if (data.status == "200") {
+
+            const db = await initLocalUserDB(user.uid, `db_${user.uid.toLowerCase()}`, "12345"); // засекретить пароль
+            await putUserProfile(
+                {_id: user.uid, username: username.value, firstname: firstname.value, lastname: lastname.value},
+            );
           }
+
         } catch (e) {
           console.log("Ошибка от data.json()")
           console.error(e);
         }
 
         if (user) {
-          userData.email = user.email;
-          userData.firstname = user.firstname;
-          userData.lastname = user.lastname;
-          userData.username = user.username;
+          userData.email = email.value;
+          userData.firstname = firstname.value;
+          userData.lastname = lastname.value;
+          userData.username = username.value;
           userData.uid = user.uid;
 
           await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя

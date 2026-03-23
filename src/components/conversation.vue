@@ -9,6 +9,9 @@
   import gifSender from "@/components/gifSender.vue"
   import MessageStatus from "@/components/messageStatus.vue";
 
+  import { saveDataPouchDB, getDB } from "@/db/pouchDB.js"
+  import { userDataStore } from "@/stores/userData.js";
+
   const isMediaSender = ref(false);
   const isMediaPlayer = ref(false);
   const isVideo = ref(false);
@@ -20,6 +23,7 @@
   const mediaText = ref('');
 
   const currentScroll = ref(0);
+  const userData = userDataStore().userData;
 
   const emit = defineEmits(['burgerClicked', 'audioCallClicked', 'videoCallClicked', 'callAlert']);
   const props = defineProps({
@@ -67,6 +71,27 @@
       time: time,
       chat: props.activeChat.index
     }
+
+    const designDoc = {
+      _id: '_design/chat', // Префикс _design/ обязателен!
+      views: {
+        // Название твоего "индекса"
+        count_by_type: {
+          // Функция MAP: проходит по каждому документу в базе
+          map: function (doc) {
+            if (doc.type) {
+              // emit(ключ, значение)
+              // Ключ — это по чему мы будем фильтровать/группировать
+              emit(doc.type, 1);
+            }
+          }.toString(), // Превращаем в строку для хранения в JSON
+
+          // Функция REDUCE: агрегирует данные (необязательно)
+          reduce: '_sum' // Встроенная функция для подсчета суммы
+        }
+      }
+    };
+
 
     chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", media: previewMedia.value, status: 'error', mediaType: selectedMedia.value.type, text: mediaMessage.value.text, time: time});
     mediaText.value = mediaMessage.value.text;
@@ -153,7 +178,7 @@
     }
   }
 
-  const onSubmitClick = () => {
+  const onSubmitClick = async () => {
 
     // проверка на пустое сообщение
     if (typedText.value.trim().length > 0) {
@@ -170,7 +195,24 @@
         chat: props.activeChat.index
       }
 
-      chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", text: typedText.value, time: time});
+
+      // сохраняем новое сообщение в PouchDB
+      // console.log(localDB)
+      // await saveDataPouchDB(newMessage, localDB)
+
+      const dbName = `db_${String(userData.uid).toLowerCase()}`
+      const localDB = await getDB(dbName);
+      const messagesFromDB = await localDB.allDocs({include_docs: true})
+
+      console.log(userData);
+
+      let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
+      await saveDataPouchDB()
+      await saveDataPouchDB(newMessage, localDB, messageId);
+
+      console.log(messagesFromDB);
+
+      chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", text: typedText.value, time: time, status: 'delivered'});
       typedText.value = '';
     }
 
