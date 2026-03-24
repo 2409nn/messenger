@@ -1,12 +1,15 @@
 <script setup>
 
-  import { ref, watch, computed } from 'vue'
+  import { ref, watch, computed, reactive, onMounted } from 'vue'
+  import { userDataStore } from "@/stores/userData.js";
+  import {loadChats, getUserProfile} from "@/db/pouchDB.js";
 
   import user1 from '@/assets/imgs/avatars/user_1.jpg'
   import user2 from '@/assets/imgs/avatars/user_2.jpg'
   import user3 from '@/assets/imgs/avatars/user_3.jpg'
   import user4 from '@/assets/imgs/avatars/user_4.jpg'
   import EmptyState from "@/components/emptyState.vue";
+  import profile_default from "@/assets/imgs/avatars/profile_default.png"
   import counter from "@/components/counter.vue";
 
   const props = defineProps({
@@ -22,33 +25,42 @@
 
   const activeIndex = ref(null);
 
-  const usersData = {
-    personalChats: {
-      user_1: {
-        firstname: "Ope",
-        time: "16:47",
-        message: "Gee, its been good news all day. i met someone special today. she's really pretty.",
-        avatar: user1
-      },
-      user_2: {
-        firstname: "Bambam",
-        time: "16:12",
-        message: "Are you coming to class tomorrow? we have test.",
-        avatar: user2
-      },
-      user_3: {
-        firstname: "Lucia",
-        time: "15:27",
-        message: "I miss you dear, when are you coming to see me.",
-        avatar: user3
-      },
-      user_4: {
-        firstname: "Mijan",
-        time: "16:00",
-        message: "Baba what sup na, you still de Lagos?",
-        avatar: user4
+  const chats = reactive([]); // Реактивный объект для Vue
+  const uid = userDataStore().userData.uid;
+  const interlocatorsData = reactive({}); // хранит в себе профильные данные всех собеседников
+
+  const fetchProfiles = async () => {
+    // Ждем, пока загрузятся сами чаты (у тебя там await loadChats)
+    // Предположим, chats — это массив после loadChats
+
+    for (const chat of chats) {
+      let interlocatorId = chat.members_id.filter(id => id !== uid)[0];
+
+      try {
+        const db = await getUserProfile();
+        const result = await db.get(interlocatorId);
+
+        // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
+        interlocatorsData[interlocatorId] = {
+          id: interlocatorId,
+          firstname: result.firstname || 'Без имени',
+          lastname: result.lastname || '',
+          avatar: result.avatar || profile_default,
+        };
+      } catch (e) {
+        console.error("Ошибка загрузки профиля:", interlocatorId, e);
       }
-    },
+    }
+  };
+
+  onMounted(async () => {
+    await loadChats(uid, chats);
+
+    await fetchProfiles();
+  });
+
+  const usersData = {
+    personalChats: interlocatorsData,
     channels: {},
     live: {},
   }

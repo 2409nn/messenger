@@ -102,8 +102,6 @@ async function initChatDB(idToken, dbName, uids) {
     const uid = userData.uid;
     const password = "12345"; // засекретить пароль
 
-    // регистрация на couchDB
-    await registerInCouch(uid, password);
     try {
         // создание базы данных для чата
         await nano.db.create(dbName);
@@ -141,11 +139,6 @@ async function initChatDB(idToken, dbName, uids) {
             }
         };
 
-        var userChatDoc = {
-            _id: dbName,
-            members_id: uids,
-        }
-
         // Отправляем PUT запрос прямо на /db_name/_security
         // nano.request — это универсальный способ достучаться до любого API CouchDB
         await nano.request({
@@ -158,8 +151,17 @@ async function initChatDB(idToken, dbName, uids) {
         await db.insert(chatDesignDoc); // вставляем автоматически дизайн документ для фильтрации сообщений
 
         // каждому участнику группы вставляем мета-документ чата
+        console.log(uids);
         for (const uid of uids) {
-            const memberDB = await nano.use(`db_${uid.toLowerCase()}`);
+            console.log(`db_${uid.toLowerCase()}`);
+
+            let userChatDoc = {
+                _id: `${dbName}:${uid.toLowerCase()}`,
+                members_id: uids,
+                type: 'chat_meta'
+            };
+
+            const memberDB = nano.use(`db_${uid.toLowerCase()}`);
             await memberDB.insert(userChatDoc);
         }
 

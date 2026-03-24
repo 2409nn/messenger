@@ -113,3 +113,39 @@ export async function sendMessage(chatId, uid, message) {
         console.error(err);
     }
 }
+
+export async function loadChats(uid, chats) {
+    const password = '12345'; // засекретить пароль
+    const dbName = `db_${uid.toLowerCase()}`;
+    console.log(dbName);
+
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
+
+    const localDB = new PouchDB(dbName);
+    const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
+
+    // Функция для загрузки всех данных из локальной базы
+    const updateChats = async () => {
+        const allDocs = await localDB.allDocs({include_docs: true, startkey: 'chat_', endkey: 'chat_\uffff'});
+        allDocs.rows.forEach(row => {
+            chats.push(row.doc); // Наполняем наш объект
+        });
+
+    };
+
+    // Запускаем синхронизацию
+    localDB.sync(remoteDB, {
+        live: true,
+        retry: true,
+    })
+        .on('change', async (info) => {
+            console.log('Данные изменились, обновляем список...');
+            await updateChats(); // Перечитываем базу при каждом изменении
+        })
+        .on('error', (err) => {
+            console.error('Ошибка синхронизации:', err);
+        });
+
+    // Первоначальная загрузка
+    await updateChats();
+}

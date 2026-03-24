@@ -11,7 +11,7 @@ export default defineConfig({
     // vueDevTools(),
   ],
   define: {
-    // global: 'window',
+    // global: 'globalThis',
   },
   resolve: {
     alias: {

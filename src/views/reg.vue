@@ -111,14 +111,11 @@
 
         if (user) {
 
-          console.log(`1 ${email.value}`)
           userData.email = email.value;
           userData.firstname = firstname.value;
           userData.lastname = lastname.value;
           userData.username = username.value;
           userData.uid = user.uid;
-
-          console.log(`2 ${email.value}`)
 
           await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя
 
@@ -158,7 +155,29 @@
       try {
         const loginResult = await verifyUserPassword(email.value, password.value);
         if (loginResult.success) {
-          changePage();
+          userData.email = email.value;
+          userData.uid = loginResult.uid;
+
+          // получение токена
+          const token = loginResult.token; // JWT токен
+          const res = fetch('http://localhost:5005/auth-sync', {
+            method: 'POST',
+            body: JSON.stringify({ idToken: token }),
+            headers: { 'Content-Type': 'application/json' },
+          })
+
+          const data = await res;
+
+          try {
+            if (data.status == "200") {
+              changePage();
+            }
+
+          } catch (e) {
+            console.log("Ошибка от data.json()")
+            console.error(e);
+          }
+
         } else {
           const error = new Error("Invalid email or password");
           error.code = "auth/invalid-credential";

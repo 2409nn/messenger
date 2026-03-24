@@ -49,6 +49,7 @@ app.post('/chat-create', async (req, res) => {
         const token = authHeader && authHeader.split(' ')[1];
 
         if (!token) {
+            console.log("Нет токена")
             return res.status(401).json({ error: "No token provided" });
         }
 

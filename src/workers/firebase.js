@@ -94,9 +94,12 @@ export async function verifyUserPassword(email, password) {
     try {
         console.log(auth);
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const token = await userCredential.user.getIdToken();
         return {
             success: true,
-            user: userCredential.user
+            user: userCredential.user,
+            token: token,
+            uid: userCredential.user.uid,
         };
     } catch (error) {
         // Обрабатываем типичные ошибки
