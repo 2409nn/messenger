@@ -87,7 +87,7 @@
         const user = await registerWithEmail(email.value, password.value);
 
         // отправка запроса к серверу, который синхронизируется с CouchDB
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(); // JWT токен
         const res = fetch('http://localhost:5005/auth-sync', {
           method: 'POST',
           body: JSON.stringify({ idToken: token }),
@@ -110,11 +110,15 @@
         }
 
         if (user) {
+
+          console.log(`1 ${email.value}`)
           userData.email = email.value;
           userData.firstname = firstname.value;
           userData.lastname = lastname.value;
           userData.username = username.value;
           userData.uid = user.uid;
+
+          console.log(`2 ${email.value}`)
 
           await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя
 

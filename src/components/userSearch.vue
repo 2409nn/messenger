@@ -8,13 +8,18 @@
   import { getUserProfile } from "@/db/pouchDB.js";
 
   const isEmpty = ref(true)
-  const emit = defineEmits(['update:isPopupVisible']);
+  const emit = defineEmits(['update:isPopupVisible', 'userSelected']);
   const searchText = ref("");
 
   const closeButton = () => {
     emit("update:isPopupVisible", false);
   }
   const foundUsers = ref([]);
+
+  function handleCardClicked (payload) {
+    emit("update:isPopupVisible", false);
+    emit("userSelected", payload);
+  }
 
   // функция напрямую делает запрос на базу данных
   async function makeSearchRequest () {
@@ -67,7 +72,9 @@
     <div class="userSearch__found">
       <ul class="userSearch__found-users">
 
-        <li class="userSearch__found-user" v-for="user in foundUsers"><userCard :uid="user._id" :avatar="user.avatar" :first-name=user.firstname :username=user.username></userCard></li>
+        <li class="userSearch__found-user" v-for="user in foundUsers">
+          <userCard @card-clicked="handleCardClicked" :uid="user._id" :avatar="user.avatar" :first-name=user.firstname :username=user.username></userCard>
+        </li>
 
       </ul>
 

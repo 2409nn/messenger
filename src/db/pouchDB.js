@@ -69,39 +69,47 @@ export async function addUsersToChat(dbName, uids) {
         }
     };
 
-    fetch(serverURL, {
+    await fetch(serverURL, {
         method: 'POST',
         body: JSON.stringify(securityData)
     })
 
 }
 
-export async function createChatDB(uids) {
-    // 1. Сортируем и создаем строку для хеша
+export async function createChatDB(uids, token) {
+
+    // делаем из uids единый хэш-id
     const sortedIds = [...uids].sort().join('|');
     const msgUint8 = new TextEncoder().encode(sortedIds);
-
-    // 2. Генерируем SHA-256
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-
-    // 3. Конвертируем Buffer в HEX-строку
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
     const id = `chat_${hashHex.substring(0, 32)}`; // Берем часть хеша для краткости
 
-    // 4. Названия баз
-    const localDB = new PouchDB(id);
-    const remoteURL = `http://admin:12345@localhost:5984/${id}`; // засекретить пароль
+    // запрос на сервер, где передаем параметры для функции
+    const res = await fetch('http://localhost:5005/chat-create', {
+        method: 'POST',
+        body: JSON.stringify({id: id, uids: uids}),
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+    })
+
+    if (!res.ok) { console.error('Сервер не смог выполнить запрос'); return }
+    console.log(res);
+
+}
+
+export async function sendMessage(chatId, uid, message) {
+    const password = '12345'; // засекретить пароль
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${chatId}`;
     const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
 
-    // 5. Синхронизация
-    localDB.sync(remoteDB, {
-        retry: true,
-        live: true,
-    }).on('error', (err) => {
-        console.error("Sync error:", err);
-    });
-
-    return localDB;
+    try {
+        await remoteDB.put(message);
+    }
+    catch(err) {
+        console.error(err);
+    }
 }

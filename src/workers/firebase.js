@@ -85,7 +85,7 @@ export async function signUserOut() {
 }
 
 // Отслеживание состояния аккаунта пользователя (Будет внедрено в будущем)
-export function observeAuthState(callback) {
+export async function observeAuthState(callback) {
     return onAuthStateChanged(auth, user => callback(user));
 }
 

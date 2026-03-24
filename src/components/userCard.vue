@@ -1,9 +1,12 @@
 <script setup>
 
   import profileDefault from "@/assets/imgs/avatars/profile_default.png"
-
-  import { addUsersToChat, createChatDB } from "@/db/pouchDB.js"
+  import { createChatDB } from "@/db/pouchDB.js"
   import { userDataStore } from "@/stores/userData.js";
+  import { observeAuthState } from "@/workers/firebase.js";
+  import {
+    getAuth,
+  } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
 
 
   const props = defineProps({
@@ -39,12 +42,24 @@
 
     console.log(props.uid)
 
-    if (userData.uid !== props.uid) {
-      const chatDB = await createChatDB([userData.uid, props.uid]) // создаем чат
-      await addUsersToChat(chatDB, [userData.uid, props.uid]);
+    if (userData.uid === props.uid) { console.error('нельзя писать самому себе'); return }
 
-    } else {
-      console.log("Нельзя написать самому себе (одинаковые uid)")
+    try {
+      const auth = await getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        console.error("Пользователь не авторизован в Firebase!");
+        return;
+      }
+
+      const token = await user.getIdToken()
+      const localChatDB = await createChatDB([userData.uid, props.uid], token) // создаем чат
+
+    }
+
+    catch (error) {
+      console.error(error);
     }
   }
 

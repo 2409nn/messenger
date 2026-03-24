@@ -94,9 +94,10 @@ async function handleUserSync(idToken) {
     }
 
     return { dbName, password };
-}
+} // создает личную базу данных для пользователя
 
-async function createChatDB(idToken, dbName, uids) {
+// инициализация базы данных для чата в couchDB
+async function initChatDB(idToken, dbName, uids) {
     const userData = await verifyUserAndRole(idToken);
     const uid = userData.uid;
     const password = "12345"; // засекретить пароль
@@ -104,14 +105,46 @@ async function createChatDB(idToken, dbName, uids) {
     // регистрация на couchDB
     await registerInCouch(uid, password);
     try {
+        // создание базы данных для чата
         await nano.db.create(dbName);
-
         const db = nano.use(dbName);
 
+        // настройка разрешения доступа к базе
         const securityDoc = {
             admins: { names: ['admin'], roles: [] },
             members: { names: uids, roles: [] }
         };
+
+        const chatDesignDoc = {
+            _id: '_design/chat_logic',
+            views: {
+                by_timestamp: {
+                    map: function (doc) {
+                        if (doc.type === 'message') {
+                            emit(doc.timestamp, doc);
+                        }
+                    }.toString() // Nano требует функции в виде строк
+                },
+                by_sender: {
+                    map: function (doc) {
+                        if (doc.type === 'message') {
+                            emit(doc.senderId, doc);
+                        }
+                    }
+                },
+            },
+            // Можно добавить фильтр для репликации
+            filters: {
+                relevant_messages: function(doc, req) {
+                    return doc.type === 'message';
+                }.toString()
+            }
+        };
+
+        var userChatDoc = {
+            _id: dbName,
+            members_id: uids,
+        }
 
         // Отправляем PUT запрос прямо на /db_name/_security
         // nano.request — это универсальный способ достучаться до любого API CouchDB
@@ -121,6 +154,15 @@ async function createChatDB(idToken, dbName, uids) {
             method: 'PUT',
             body: securityDoc
         });
+
+        await db.insert(chatDesignDoc); // вставляем автоматически дизайн документ для фильтрации сообщений
+
+        // каждому участнику группы вставляем мета-документ чата
+        for (const uid of uids) {
+            const memberDB = await nano.use(`db_${uid.toLowerCase()}`);
+            await memberDB.insert(userChatDoc);
+        }
+
     } catch (e) {
         if (e.reason === 'The database could not be created, the file already exists.') {
             console.log(`ℹ️ База ${dbName} уже существует, идем дальше.`);
@@ -132,4 +174,4 @@ async function createChatDB(idToken, dbName, uids) {
     }
 }
 
-module.exports = { verifyUserAndRole, handleUserSync, createChatDB, admin };
+module.exports = { verifyUserAndRole, handleUserSync, initChatDB, admin };

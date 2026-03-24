@@ -183,6 +183,11 @@ function handleCreatedData (payload) {
   console.log(payload);
 }
 
+function handleUserSelected (payload) {
+  // todo сделать так, чтобы в user появился новый документ с метаданными нового чата
+
+}
+
 
 </script>
 
@@ -195,6 +200,7 @@ function handleCreatedData (payload) {
 <!--  <preloader />-->
 
   <user-search
+      @user-selected="handleUserSelected"
       :class="{'active': isSearchOpen}"
       v-model:is-popup-visible="isSearchOpen"
   />
