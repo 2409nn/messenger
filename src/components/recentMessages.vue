@@ -41,7 +41,7 @@
         const result = await db.get(interlocatorId);
 
         // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
-        interlocatorsData[interlocatorId] = {
+        interlocatorsData[chat._id] = {
           id: interlocatorId,
           firstname: result.firstname || 'Без имени',
           lastname: result.lastname || '',
@@ -82,6 +82,8 @@
   const emit = defineEmits(["clickChat"])
 
   const onClickChat = (index, avatar, firstname, lastname) => {
+    // index – id чата
+
     let tempIndex = activeIndex.value
     activeIndex.value = index;
     if (tempIndex === index && props.isChatOpen) {

@@ -23,7 +23,6 @@
 
   async function getGifs() {
     const url = `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&q=${SEARCH_QUERY.value}&limit=${LIMIT}&rating=g&lang=en-US`;
-    console.log(SEARCH_QUERY);
 
     try {
       const response = await fetch(url);

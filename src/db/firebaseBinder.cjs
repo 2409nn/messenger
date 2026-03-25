@@ -156,7 +156,7 @@ async function initChatDB(idToken, dbName, uids) {
             console.log(`db_${uid.toLowerCase()}`);
 
             let userChatDoc = {
-                _id: `${dbName}:${uid.toLowerCase()}`,
+                _id: `${dbName}`,
                 members_id: uids,
                 type: 'chat_meta'
             };

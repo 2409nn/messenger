@@ -101,9 +101,9 @@ export async function createChatDB(uids, token) {
 
 }
 
-export async function sendMessage(chatId, uid, message) {
+export async function sendMessage(dbName, uid, message) {
     const password = '12345'; // засекретить пароль
-    const remoteURL = `http://${uid}:${password}@localhost:5984/${chatId}`;
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
     const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
 
     try {
@@ -117,7 +117,6 @@ export async function sendMessage(chatId, uid, message) {
 export async function loadChats(uid, chats) {
     const password = '12345'; // засекретить пароль
     const dbName = `db_${uid.toLowerCase()}`;
-    console.log(dbName);
 
     const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
 
@@ -148,4 +147,32 @@ export async function loadChats(uid, chats) {
 
     // Первоначальная загрузка
     await updateChats();
+}
+
+export async function getProfileById(uid) {
+
+    const password = '12345'; // засекретить пароль
+
+    const remoteURL = `http://${uid}:${password}@localhost:5984/user_profiles/`;
+    return await new PouchDB(remoteURL, { skip_setup: true }).get(uid);
+}
+
+export async function syncToChatDB(chatId, uid) {
+    const password = '12345';
+
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${chatId}`;
+    const localDB = new PouchDB(chatId.toLowerCase());
+    const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
+    try {
+        const syncProcessor = localDB.sync(remoteDB, {
+            live: true,
+            retry: true,
+        });
+
+        // Возвращаем и базу, и обработчик
+        return { localDB, syncProcessor };
+
+    } catch (err) {
+        console.error('Не удалось связаться с базой', err);
+    }
 }

@@ -3,21 +3,27 @@
   import toggleButton from "./toggleButton.vue"
   import {ref, reactive, onMounted, onUnmounted, watch} from 'vue'
   import profile_default from '../assets/imgs/avatars/profile_default.png'
+  import { getProfileById } from '@/db/pouchDB.js'
 
   // доступ к localStorage через Pinia
   import { useSettingsStore } from '@/stores/settings.js'
   const settings = useSettingsStore().settings;
 
+  // доступ к пользовательским данным
+  import { userDataStore } from '@/stores/userData.js'
+  const userData = userDataStore().userData;
+
   const emit = defineEmits(['update:isPopupVisible', 'update:isDark']);
 
-  const previewMedia = ref('https://avatars2.githubusercontent.com/u/55?v=4'); // только URL
-  const userName = ref('iskanderious');
-  const firstName = ref('Iskander');
-  const lastName = ref('');
-  const bio = ref('Developer of Nuclear');
+
+  const avatar = ref(userData.avatar); // только URL
+  const userName = ref(userData.username);
+  const firstName = ref(userData.firstname);
+  const lastName = ref(userData.lastname);
+  const bio = ref(userData.bio);
   const personalityForm = ref(null);
 
-  const isDark = ref(false);
+  const isDark = ref(settings.darkMode);
 
   const props = defineProps({
     isPopupVisible: {
@@ -54,14 +60,6 @@
 
   let interval
 
-  const userData = reactive({
-    username: userName.value,
-    firstname: firstName.value,
-    lastname: lastName.value,
-    bio: bio.value,
-    avatar: previewMedia.value,
-  });
-
   const closeButton = () => {
     emit("update:isPopupVisible", false);
   }
@@ -79,13 +77,13 @@
   }
 
   const onSaveChanges = () => {
-    previewMedia.value = personalityForm.value.querySelectorAll('.accountSettings__input-avatar').value;
-    firstName.value = personalityForm.value.querySelector('#first-name').value;
-    userName.value = personalityForm.value.querySelector('#username').value;
-    lastName.value = personalityForm.value.querySelectorAll('#last-name').value;
-    bio.value = personalityForm.value.querySelectorAll('#bio').value;
+    // Просто копируем значения из рефов в стор
+    userData.firstname = firstName.value;
+    userData.lastname = lastName.value;
+    userData.username = userName.value;
+    userData.bio = bio.value;
 
-    console.log(firstName.value);
+    console.log("Данные сохранены в Store:", userData);
   }
 
   // ежеминутная проверка времени для автоматической смены темы
@@ -103,9 +101,9 @@
     startInterval();
   })
 
-  onMounted(() => {
-    startInterval();
-  })
+  // onMounted(async () => {
+  //   await getProfileById();
+  // })
 
   onUnmounted(() => {
     clearInterval(interval);
@@ -152,23 +150,23 @@
               <div class="names-column">
                 <div class="form-group">
                   <label for="first-name">First name:</label>
-                  <input type="text" :value="userData.firstname" id="first-name" placeholder="Type your firstname...">
+                  <input type="text" v-model="firstName" id="first-name" placeholder="Type your firstname...">
                 </div>
                 <div class="form-group">
                   <label for="last-name">Last name:</label>
-                  <input type="text" :value="userData.lastname"  id="last-name" placeholder="Type your lastname...">
+                  <input type="text" v-model="lastName" id="last-name" placeholder="Type your lastname...">
                 </div>
               </div>
             </div>
 
             <div class="form-group">
               <label for="username">Username:</label>
-              <input class="accountSettings__input-username" type="text" id="username" :value="userData.username" placeholder="Type username to find you...">
+              <input class="accountSettings__input-username" v-model="userName" type="text" id="username" placeholder="Type username to find you...">
             </div>
 
             <div class="form-group">
               <label for="bio">Bio:</label>
-              <textarea id="bio" :value="userData.bio" placeholder="Type something, for example: my name is Iskander, I’m from Almaty city..."></textarea>
+              <textarea id="bio" v-model="bio" placeholder="Type something, for example: my name is Iskander, I’m from Almaty city..."></textarea>
             </div>
 
             <button type="submit" class="submit-btn" @click="onSaveChanges">Save changes</button>

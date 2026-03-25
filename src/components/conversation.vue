@@ -1,7 +1,8 @@
 <script setup>
   import userAvatar1 from '@/assets/imgs/avatars/user_1.jpg'
   import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg'
-  import { computed, ref, reactive, nextTick, watch } from "vue"
+  import profile_default from '@/assets/imgs/avatars/profile_default.png'
+  import { computed, ref, reactive, nextTick, watch, onMounted } from "vue"
   import emptyState from "@/components/emptyState.vue"
   import mediaSender from "@/components/mediaSender.vue"
   import mediaPlayer from "@/components/mediaPlayer.vue"
@@ -9,7 +10,7 @@
   import gifSender from "@/components/gifSender.vue"
   import MessageStatus from "@/components/messageStatus.vue";
 
-  import { saveDataPouchDB, getDB } from "@/db/pouchDB.js"
+  import {sendMessage, getProfileById, syncToChatDB} from "@/db/pouchDB.js"
   import { userDataStore } from "@/stores/userData.js";
 
   const isMediaSender = ref(false);
@@ -38,6 +39,24 @@
     }
   });
 
+  // Функция для вытягивания сообщений из PouchDB
+  const loadMessagesFromDB = async (chatId, localDB) => {
+    try {
+      const result = await localDB.query('chat_logic/by_type', {
+        include_docs: true,
+        attachments: true // если есть фото/аудио
+      });
+
+      // Обновляем наш реактивный объект chatData
+      chatData[chatId] = {
+        messages: result.rows.map(row => row.doc)
+      };
+
+    } catch (err) {
+      console.error("Ошибка загрузки сообщений:", err);
+    }
+  };
+
   const onFileSelected = (event) => {
     const file = event.target.files[0];
     if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
@@ -51,9 +70,38 @@
 
   const currentMessages = computed(() => {
     const index = props.activeChat?.index;
-    // Если индекс есть и такой чат существует в нашем реактивном объекте
-    return (index && chatData[index]) ? chatData[index].messages : [];
+    // Если чат в chatData есть, пробуем взять messages, если их нет - пустой массив
+    return chatData[index]?.messages || [];
   });
+
+  function handleGifSend (payload) {
+    const gifURL = payload;
+
+    const now = new Date();
+    const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
+    const time = `${now.getHours()}:${now.getMinutes()}`;
+    let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
+
+    const newMessage = {
+      _id: messageId,
+      senderID: user.id,
+      avatar: user.avatar,
+      type: 'gif',
+      media: gifURL,
+      status: 'delivered',
+      date: now.toISOString(),
+      time: time,
+    }
+
+    chatData[props.activeChat.index].messages.push(
+        {avatar: user.avatar,
+          title: "Me",
+          media: newMessage.media,
+          status: 'pending',
+          mediaType: newMessage.type,
+          text: newMessage.text,
+          time: time});
+  }
 
   function handleMediaSend (payload) {
     mediaMessage.value = payload;
@@ -61,15 +109,18 @@
     const now = new Date();
     const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
     const time = `${now.getHours()}:${now.getMinutes()}`;
+    let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
 
     const newMessage = {
+      _id: messageId,
       senderID: user.id,
       avatar: user.avatar,
+      type: 'message-media',
       text: mediaMessage.value.text,
       media: previewMedia.value,
+      status: 'delivered',
       date: now.toISOString(),
       time: time,
-      chat: props.activeChat.index
     }
 
     const designDoc = {
@@ -105,56 +156,12 @@
     isMediaPlayer.value = true
   }
 
-
   const onBurgerClicked = (event) => {
     emit('burgerClicked', event)
   }
 
   let chatData = reactive({
-    user_1: {
-      messages: [
-        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-        { time: '09:15', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Good morning! I finally met that person I was telling you about. She is absolutely incredible.' },
-        { time: '09:42', avatar: userAvatar2, status: 'error', title: 'Me', text: 'That’s great news! I’ve been waiting for this update. Give me the details.' },
-        { time: '10:05', avatar: userAvatar1, status: 'error', title: 'Ope', text: 'Let’s grab a drink after work, and I’ll tell you everything. She might even join us later.' },
-        { time: '12:30', avatar: userAvatar2, status: 'error', title: 'Me', text: 'Sounds like a plan. Just text me the location when you’re heading out.' },
-      ]
-    },
-    user_2: {
-      messages: [
-        { time: '11:20', avatar: userAvatar1, status: 'pending', title: 'Ope', text: 'Did you see the latest project feedback? The client wants us to redesign the entire footer by tomorrow.' },
-        { time: '11:45', avatar: userAvatar2, status: 'pending', title: 'Me', text: 'Again? We just finalized everything yesterday. I’ll take a look at the Jira ticket now.' },
-        { time: '14:10', avatar: userAvatar1, status: 'pending', title: 'Ope', text: 'I managed to hop on a quick call with them. Good news: we have until Friday to submit the changes.' },
-        { time: '14:15', avatar: userAvatar2, status: 'pending', title: 'Me', text: 'Huge relief. In that case, I’ll finish the chat logic first before touching the CSS.' }
-      ]
-    },
-    user_3: {
-      messages: [
-        { time: '15:00', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'Hey, do you still have that link to the Vue 3 documentation you shared last week?' },
-        { time: '15:05', avatar: userAvatar2, status: 'delivered', title: 'Me', text: 'Sure thing: vuejs.org. They just updated the section on Composition API and provide/inject.' },
-        { time: '15:10', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'Perfect, thanks! I was getting stuck with some nested event emits.' },
-        { time: '16:00', avatar: userAvatar1, status: 'delivered', title: 'Ope', text: 'By the way, using the bracket notation for dynamic keys worked like a charm. Cheers!' }
-      ]
-    },
-    user_4: {
-      messages: [
-        { time: '18:20', avatar: userAvatar1, status: 'read', title: 'Ope', text: 'I’m already at the bar. Where are you? It’s getting crowded, so I grabbed a table in the corner.' },
-        { time: '18:35', avatar: userAvatar2, status: 'read', title: 'Me', text: 'Be there in 5 minutes, just looking for parking. Order me a cold one, please!' },
-        { time: '18:36', avatar: userAvatar1, status: 'read', title: 'Ope', text: 'Done. Also, that special person I mentioned this morning? She just walked in.' },
-        { time: '18:40', avatar: userAvatar2, status: 'read', title: 'Me', text: 'No way! That was fast. Okay, I’m coming inside now.' }
-      ]
-    }
+
   });
 
   const onAudioCallClick = () => {
@@ -183,36 +190,52 @@
     // проверка на пустое сообщение
     if (typedText.value.trim().length > 0) {
       const now = new Date();
-      const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
+
+      const user = await getProfileById(userData.uid);
+      console.log(user);
       const time = `${now.getHours()}:${now.getMinutes()}`;
+      let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
 
       const newMessage = {
+        _id: messageId,
         senderID: user.id,
-        avatar: user.avatar,
+        type: 'message',
+        avatar: user.avatar || profile_default,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        status: 'delivered',
         text: typedText.value,
         date: now.toISOString(),
         time: time,
         chat: props.activeChat.index
       }
 
+      // сохранение сообщения в базу данных
+      const chatId = props.activeChat.index;
+      const dbName = `${String(chatId).toLowerCase()}`
+      await sendMessage(dbName, userData.uid, newMessage)
 
-      // сохраняем новое сообщение в PouchDB
-      // console.log(localDB)
-      // await saveDataPouchDB(newMessage, localDB)
+      // синхронизирование локальной базы данных с удаленной
+      const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
 
-      const dbName = `db_${String(userData.uid).toLowerCase()}`
-      const localDB = await getDB(dbName);
-      const messagesFromDB = await localDB.allDocs({include_docs: true})
+      const messagesResult = await localDB.query('chat_logic/by_type', { include_docs: true });
+      chatData[chatId] = {
+        messages: messagesResult.rows.map(row => row.doc)
+      };
 
-      console.log(userData);
+      // при обновлении в чате отображать все сообщения
+      syncProcessor.on('change', async (info) => {
+        await loadMessagesFromDB(chatId, localDB)
+      });
 
-      let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
-      await saveDataPouchDB()
-      await saveDataPouchDB(newMessage, localDB, messageId);
+      // const messagesFromDB = await localDB.allDocs({include_docs: true})
+      //
+      // console.log(userData);
+      //
+      //
+      // console.log(messagesFromDB);
 
-      console.log(messagesFromDB);
-
-      chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", text: typedText.value, time: time, status: 'delivered'});
+      // chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", text: typedText.value, time: time, status: 'delivered'});
       typedText.value = '';
     }
 
@@ -228,23 +251,41 @@
   }
 
   // Следим за сменой активного чата
-  watch(() => props.activeChat?.index, (newVal) => {
-    if (newVal) {
-      // При смене чата — прыгаем мгновенно
+  watch(() => props.activeChat?.index, async (newChatId) => {
+
+    if (newChatId) {
+
+      const dbName = newChatId.toLowerCase();
+
+      // 1. Подключаемся к базе и запускаем синхронизацию
+      const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
+
+      // 2. СРАЗУ загружаем то, что уже есть в локальной базе (не дожидаясь сети)
+      await loadMessagesFromDB(newChatId, localDB);
+
+      // 3. Подписываемся на будущие изменения (новые сообщения от собеседника)
+      syncProcessor.on('change', async () => {
+        await loadMessagesFromDB(newChatId, localDB);
+      });
+
+      // При смене чата скролл мгновенно
       scrollToBottom(true);
+
     }
   });
 
-  // Следим за новыми сообщениями внутри чата
-  watch(() => currentMessages.value.length, (newVal, oldVal) => {
-    // Если сообщений стало больше (пришло новое) — скроллим плавно
-    // Если массив сбросился или это первая загрузка — мгновенно
-    const isNewMessage = oldVal !== 0 && newVal > oldVal;
+  // Следим за новыми сообщениями внутри чата и количеством сообщений
+  watch(() => currentMessages.value?.length, (newVal, oldVal) => {
+
+    if (newVal === undefined) return; // Если newVal undefined или null (чат еще грузится), ничего не делаем
+
+    const isNewMessage = oldVal !== undefined && oldVal !== 0 && newVal > oldVal;
 
     if (currentScroll.value < 400) {
-      scrollToBottom(!isNewMessage); // если пользователь скроллит выше, новое сообщение не сбросит его вниз
-      }
+      scrollToBottom(!isNewMessage);
+    }
   });
+
 
 </script>
 
@@ -252,7 +293,7 @@
 
   <mediaSender @on-media-send="handleMediaSend" :class="{'active': isMediaSender}" v-model:is-popup-visible="isMediaSender" :is-video="isVideo" :media="previewMedia" />
   <mediaPlayer :class="{'active': isMediaPlayer}" v-model:is-popup-visible="isMediaPlayer" :media="previewMedia" :media-text="mediaText" :is-video="isVideo" />
-  <gifSender @on-gif-click="handleMediaSend" :class="{'active': isGifs}" v-model:is-popup-visible="isGifs" />
+  <gifSender @on-gif-click="handleGifSend" :class="{'active': isGifs}" v-model:is-popup-visible="isGifs" />
 
   <bottom-scroller :elementDOM="chatDOM" v-if="currentScroll > 400" />
 
@@ -290,16 +331,16 @@
     <div class="conv__chat" v-if="isChatOpen" ref="chatDOM" @scroll="onChatScroll">
       <div class="conv__messages">
 
-        <div class="conv__message" v-for="message in currentMessages" :class="{'own': message.title.toLocaleLowerCase() === 'me'}">
+        <div class="conv__message" v-for="message in currentMessages" :class="{'own': String(message.firstname).toLowerCase() === 'me'}">
           <img :src="message.avatar" alt="avatar" class="conv__message-avatar">
 
           <div class="conv__message__info">
             <div class="conv__message__info-top">
-              <span class="conv__message__info-top__title">{{ message.title }}</span>
+              <span class="conv__message__info-top__title">{{ message.firstname }} {{ message.lastname }}</span>
               <span class="conv__message__info-top__time">{{ message.time }}</span>
               <message-status class="conv__message__info-top__status" :status="message.status" />
             </div>
-            <img class="conv__message-media" v-if="String(message.mediaType).startsWith('image/')" :alt="message.text" :src="message.media" @click="onMediaPlayer">
+            <img class="conv__message-media" v-if="String(message.mediaType).startsWith('image/') || String(message.mediaType) === 'gif'" :alt="message.text" :src="message.media" @click="onMediaPlayer">
             <video class="conv__message-media" preload="metadata" v-if="String(message.mediaType).startsWith('video/')" :src="message.media" @click="onMediaPlayer"></video>
 <!--            <p class="conv__message__info__video-length">{{ message.media.duration }}</p>-->
             <p class="conv__message__info__text">{{ message.text }}</p>
