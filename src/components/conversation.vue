@@ -8,9 +8,15 @@
   import mediaPlayer from "@/components/mediaPlayer.vue"
   import bottomScroller from "@/components/bottomScroller.vue"
   import gifSender from "@/components/gifSender.vue"
-  import MessageStatus from "@/components/messageStatus.vue";
+  import MessageStatus from "@/components/messageStatus.vue"
 
-  import {sendMessage, getProfileById, syncToChatDB} from "@/db/pouchDB.js"
+  import { debounce } from 'lodash'
+
+  const debouncedLoad = debounce(async (chatId, localDB) => {
+    await loadMessagesFromDB(chatId, localDB);
+  }, 100); // 100мс задержка для сообщений, чтобы снизить нагрузку и предотвратить непредсказуемые последствия
+
+  import {sendMessage, getProfileById, syncToChatDB, getDB, updateLastMessageMetadata} from "@/db/pouchDB.js"
   import { userDataStore } from "@/stores/userData.js";
 
   const isMediaSender = ref(false);
@@ -26,7 +32,7 @@
   const currentScroll = ref(0);
   const userData = userDataStore().userData;
 
-  const emit = defineEmits(['burgerClicked', 'audioCallClicked', 'videoCallClicked', 'callAlert']);
+  const emit = defineEmits(['burgerClicked', 'audioCallClicked', 'videoCallClicked', 'callAlert', 'lastMessageUpdated']);
   const props = defineProps({
     activeChat: {
       type: Object,
@@ -185,6 +191,9 @@
     }
   }
 
+  // синхронизирование локальной базы данных с удаленной
+  let currentSync = null; // Глобальная переменная в рамках скрипта для хранения текущего процесса
+
   const onSubmitClick = async () => {
 
     // проверка на пустое сообщение
@@ -192,7 +201,6 @@
       const now = new Date();
 
       const user = await getProfileById(userData.uid);
-      console.log(user);
       const time = `${now.getHours()}:${now.getMinutes()}`;
       let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
 
@@ -213,29 +221,15 @@
       // сохранение сообщения в базу данных
       const chatId = props.activeChat.index;
       const dbName = `${String(chatId).toLowerCase()}`
-      await sendMessage(dbName, userData.uid, newMessage)
 
-      // синхронизирование локальной базы данных с удаленной
-      const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
+      const localDB = await getDB(dbName);
+      await sendMessage(dbName, userData.uid, newMessage)
 
       const messagesResult = await localDB.query('chat_logic/by_type', { include_docs: true });
       chatData[chatId] = {
         messages: messagesResult.rows.map(row => row.doc)
       };
 
-      // при обновлении в чате отображать все сообщения
-      syncProcessor.on('change', async (info) => {
-        await loadMessagesFromDB(chatId, localDB)
-      });
-
-      // const messagesFromDB = await localDB.allDocs({include_docs: true})
-      //
-      // console.log(userData);
-      //
-      //
-      // console.log(messagesFromDB);
-
-      // chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", text: typedText.value, time: time, status: 'delivered'});
       typedText.value = '';
     }
 
@@ -253,25 +247,45 @@
   // Следим за сменой активного чата
   watch(() => props.activeChat?.index, async (newChatId) => {
 
-    if (newChatId) {
+    if (!newChatId) { return; }
+    // Если уже идет синхронизация другого чата — останавливаем ее
+    if (currentSync) {
+      currentSync.cancel();
+      console.log("Старая синхронизация остановлена");
+    }
 
-      const dbName = newChatId.toLowerCase();
+    const dbName = newChatId.toLowerCase();
 
-      // 1. Подключаемся к базе и запускаем синхронизацию
-      const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
+    // 1. Подключаемся к базе и запускаем синхронизацию
+    const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
 
-      // 2. СРАЗУ загружаем то, что уже есть в локальной базе (не дожидаясь сети)
-      await loadMessagesFromDB(newChatId, localDB);
+    // 2. СРАЗУ загружаем то, что уже есть в локальной базе (не дожидаясь сети)
+    await loadMessagesFromDB(newChatId, localDB);
 
-      // 3. Подписываемся на будущие изменения (новые сообщения от собеседника)
-      syncProcessor.on('change', async () => {
-        await loadMessagesFromDB(newChatId, localDB);
-      });
+    // 3. Подписываемся на будущие изменения (новые сообщения от собеседника)
+    syncProcessor.on('change', async (info) => {
+      // PouchDB передает массив изменений. Проверяем каждый документ.
+      const changes = info.change.docs;
+
+      // Если среди изменений ТОЛЬКО наш мета-документ — выходим
+      const isOnlyMetadata = changes.every(doc => doc._id === "last_message_metadata");
+      if (isOnlyMetadata) return;
+
+      // Если есть новые сообщения (не метаданные)
+      const lastMessage = changes[changes.length - 1];
+
+      // Загружаем сообщения для UI (через debounce)
+      debouncedLoad(newChatId, localDB);
+
+      // Обновляем метаданные ТОЛЬКО если это было реальное сообщение
+      if (lastMessage.type === 'message') {
+        await updateLastMessageMetadata(localDB, lastMessage);
+      }
+    });
 
       // При смене чата скролл мгновенно
-      scrollToBottom(true);
+      await scrollToBottom(true);
 
-    }
   });
 
   // Следим за новыми сообщениями внутри чата и количеством сообщений

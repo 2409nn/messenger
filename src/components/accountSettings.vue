@@ -3,7 +3,7 @@
   import toggleButton from "./toggleButton.vue"
   import {ref, reactive, onMounted, onUnmounted, watch} from 'vue'
   import profile_default from '../assets/imgs/avatars/profile_default.png'
-  import { getProfileById } from '@/db/pouchDB.js'
+  import {getProfileById, updateUserProfile} from '@/db/pouchDB.js'
 
   // доступ к localStorage через Pinia
   import { useSettingsStore } from '@/stores/settings.js'
@@ -76,14 +76,22 @@
     }
   }
 
-  const onSaveChanges = () => {
+  const onSaveChanges = async () => {
     // Просто копируем значения из рефов в стор
     userData.firstname = firstName.value;
     userData.lastname = lastName.value;
     userData.username = userName.value;
     userData.bio = bio.value;
 
-    console.log("Данные сохранены в Store:", userData);
+    // обновление в pouchDB
+    const userProfile = await getProfileById(userData.uid);
+    userProfile.firstname = userData.firstname;
+    userProfile.lastname = userData.lastname;
+    userProfile.username = userData.username;
+    userProfile.bio = userData.bio;
+    // userProfile.avatar = userData.avatar; // доделать сохранение аватара
+    console.log(userProfile);
+    await updateUserProfile(userProfile);
   }
 
   // ежеминутная проверка времени для автоматической смены темы

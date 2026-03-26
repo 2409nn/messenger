@@ -2,7 +2,7 @@
 
   import { ref, watch, computed, reactive, onMounted } from 'vue'
   import { userDataStore } from "@/stores/userData.js";
-  import {loadChats, getUserProfile} from "@/db/pouchDB.js";
+  import {loadChats, getUserProfile, getDB, setupChatListeners} from "@/db/pouchDB.js";
 
   import user1 from '@/assets/imgs/avatars/user_1.jpg'
   import user2 from '@/assets/imgs/avatars/user_2.jpg'
@@ -23,22 +23,30 @@
     }
   })
 
+
+
   const activeIndex = ref(null);
 
   const chats = reactive([]); // Реактивный объект для Vue
   const uid = userDataStore().userData.uid;
   const interlocatorsData = reactive({}); // хранит в себе профильные данные всех собеседников
 
+  const allChatDBs = {}; // Объект для хранения инстансов БД, чтобы не плодить лишние
+
   const fetchProfiles = async () => {
     // Ждем, пока загрузятся сами чаты (у тебя там await loadChats)
     // Предположим, chats — это массив после loadChats
 
+
+
     for (const chat of chats) {
+      const chatDB = await getDB(`http://${uid}:12345@localhost:5984/${chat._id}`); // засекретить пароль
       let interlocatorId = chat.members_id.filter(id => id !== uid)[0];
 
       try {
         const db = await getUserProfile();
         const result = await db.get(interlocatorId);
+        const lastMessage = await chatDB.get('last_message_metadata');
 
         // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
         interlocatorsData[chat._id] = {
@@ -46,6 +54,7 @@
           firstname: result.firstname || 'Без имени',
           lastname: result.lastname || '',
           avatar: result.avatar || profile_default,
+          lastMessage: lastMessage || '',
         };
       } catch (e) {
         console.error("Ошибка загрузки профиля:", interlocatorId, e);
@@ -55,9 +64,13 @@
 
   onMounted(async () => {
     await loadChats(uid, chats);
-
     await fetchProfiles();
+
+    // Запускаем "живое" обновление
+    await setupChatListeners(allChatDBs, chats, interlocatorsData, uid);
   });
+
+  console.log(interlocatorsData);
 
   const usersData = {
     personalChats: interlocatorsData,
@@ -83,7 +96,7 @@
 
   const onClickChat = (index, avatar, firstname, lastname) => {
     // index – id чата
-
+    console.log(chats);
     let tempIndex = activeIndex.value
     activeIndex.value = index;
     if (tempIndex === index && props.isChatOpen) {
@@ -108,7 +121,7 @@
             <p class="recent__info-firstname">{{ user.firstname }}</p>
             <p class="recent__info-time">{{ user.time }}</p>
           </div>
-          <p class="recent__info-message">{{ user.message }}</p>
+          <p class="recent__info-message">{{ user.lastMessage.lastText }}</p>
           <counter class="recent__info-newMessages" :count="1232213" />
         </div>
       </li>
@@ -193,6 +206,8 @@
         -webkit-line-clamp: 4;    /* Показываем 4 строки */
         -webkit-box-orient: vertical;
         overflow: hidden;
+        white-space: normal; /* Добавь это */
+        word-break: break-word;
 
         line-height: 1.5;         /* Высота одной строки */
         max-height: 6em;

@@ -153,8 +153,15 @@ export async function getProfileById(uid) {
 
     const password = '12345'; // засекретить пароль
 
-    const remoteURL = `http://${uid}:${password}@localhost:5984/user_profiles/`;
+    const remoteURL = `http://${uid}:${password}@localhost:5984/user_profiles`;
     return await new PouchDB(remoteURL, { skip_setup: true }).get(uid);
+}
+
+export async function updateUserProfile(uid, updatedDoc) {
+    const password = '12345'; // засекретить пароль
+
+    const remoteURL = `http://${uid}:${password}@localhost:5984/user_profiles`;
+    await new PouchDB(remoteURL, { skip_setup: true }).put(updatedDoc);
 }
 
 export async function syncToChatDB(chatId, uid) {
@@ -175,4 +182,98 @@ export async function syncToChatDB(chatId, uid) {
     } catch (err) {
         console.error('Не удалось связаться с базой', err);
     }
+}
+
+export async function updateLastMessageMetadata (db, message) {
+    const metadataId = "last_message_metadata";
+    let success = false;
+
+    while (!success) {
+        try {
+            let metadata;
+            try {
+                // 1. Пытаемся получить актуальную версию документа прямо сейчас
+                metadata = await db.get(metadataId);
+            } catch (err) {
+                if (err.status === 404) {
+                    // Если документа нет — создаем новый
+                    metadata = { _id: metadataId, type: 'metadata' };
+                } else {
+                    throw err;
+                }
+            }
+
+            // 2. Проверяем, нужно ли вообще обновление (защита от лишних циклов)
+            if (metadata.lastText === message.text && metadata.lastTime === message.time) {
+                success = true;
+                break;
+            }
+
+            // 3. Обновляем поля
+            metadata.lastText = message.text;
+            metadata.lastSender = message.firstname || "Me";
+            metadata.lastTime = message.time;
+            metadata.timestamp = Date.now();
+
+            // 4. Пробуем сохранить
+            await db.put(metadata);
+            success = true; // Если put прошел, выходим из цикла
+
+        } catch (err) {
+            if (err.status === 409) {
+                // Если случился конфликт — просто идем на следующий круг while
+                // и заново вызываем db.get(), чтобы получить НОВЫЙ _rev
+                console.warn("Конфликт при обновлении метаданных, повторяю попытку...");
+                continue;
+            } else {
+                console.error("Критическая ошибка метаданных:", err);
+                break; // Другие ошибки прерывают цикл
+            }
+        }
+    }
+}
+
+export async function setupChatListeners(allChatDBs, chats, interlocatorsData, uid) {
+    chats.forEach(chat => {
+        const dbName = chat._id.toLowerCase();
+        const password = '12345'; // засекретить пароль
+
+        if (!allChatDBs[dbName]) {
+            const localDB = new PouchDB(dbName);
+            // Укажи свой актуальный URL к CouchDB
+            const remoteDB = new PouchDB(`http://${uid}:${password}@localhost:5984/${dbName}`);
+
+            // 1. Включаем фоновую синхронизацию, иначе изменения от собеседника не придут
+            const sync = localDB.sync(remoteDB, {
+                live: true,
+                retry: true
+            });
+
+            allChatDBs[dbName] = { localDB, sync };
+
+            // 2. Слушаем изменения документа метаданных
+            localDB.changes({
+                live: true,
+                since: 'now',
+                doc_ids: ['last_message_metadata'],
+                include_docs: true
+            }).on('change', (change) => {
+                const newMetadata = change.doc;
+
+                // ВАЖНО: Обновляем именно тот объект, который ты рендеришь в UI
+                if (interlocatorsData[chat._id]) {
+                    interlocatorsData[chat._id].lastMessage = {
+                        lastText: newMetadata.lastText,
+                        lastTime: newMetadata.lastTime,
+                        lastSender: newMetadata.lastSender,
+                    };
+
+                    // Если хочешь поднять чат вверх списка,
+                    // придется манипулировать массивом chats и interlocatorsData
+                    // Но для начала добьемся обновления текста.
+                    console.log(`Обновлено превью для чата: ${chat._id}`);
+                }
+            });
+        }
+    });
 }

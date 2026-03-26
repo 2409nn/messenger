@@ -14,11 +14,13 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@vueuse/core": "^14.2.1",
+    "browser-image-compression": "^2.0.2",
     "cors": "^2.8.6",
     "events": "^3.3.0",
     "express": "^5.2.1",
     "firebase": "^12.10.0",
     "firebase-admin": "^13.7.0",
+    "lodash": "^4.17.23",
     "nano": "^11.0.4",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
