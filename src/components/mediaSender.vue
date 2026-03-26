@@ -1,6 +1,8 @@
 <script setup>
 
 import { ref } from "vue"
+import {getDB, sendMessage} from "@/db/pouchDB.js";
+import { userDataStore } from "@/stores/userData.js"
 
 const props = defineProps({
   media: {
@@ -12,7 +14,7 @@ const props = defineProps({
 })
 
 const text = ref('');
-
+const userData = userDataStore().userData;
 const emit = defineEmits(['update:isPopupVisible', 'onMediaSend']);
 
 const closeButton = () => {
@@ -21,8 +23,10 @@ const closeButton = () => {
 }
 
 const onSubmitClick = () => {
+
   emit("onMediaSend", {text: text.value, media: props.media});
   text.value = '';
+
   closeButton();
 }
 

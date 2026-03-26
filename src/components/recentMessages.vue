@@ -45,20 +45,26 @@
 
       try {
         const db = await getUserProfile();
-        const result = await db.get(interlocatorId);
-        const lastMessage = await chatDB.get('last_message_metadata');
+        var result = await db.get(interlocatorId);
+        var lastMessage;
+        chatDB.get('last_message_metadata').then((response) => {
+          lastMessage = response;
+        }).catch((e) => {
+          console.log("Не найден документ last_message_metadata: ", e);
+        });
 
-        // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
-        interlocatorsData[chat._id] = {
-          id: interlocatorId,
-          firstname: result.firstname || 'Без имени',
-          lastname: result.lastname || '',
-          avatar: result.avatar || profile_default,
-          lastMessage: lastMessage || '',
-        };
       } catch (e) {
         console.error("Ошибка загрузки профиля:", interlocatorId, e);
       }
+
+      // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
+      interlocatorsData[chat._id] = {
+        id: interlocatorId,
+        firstname: result.firstname || 'Без имени',
+        lastname: result.lastname || '',
+        avatar: result.avatar || profile_default,
+        lastMessage: lastMessage || '',
+      };
     }
   };
 

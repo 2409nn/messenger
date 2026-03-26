@@ -130,6 +130,13 @@ async function initChatDB(idToken, dbName, uids) {
                         }
                     }
                 },
+                by_type: {
+                    map: function (doc) {
+                        if (doc.type === 'message') {
+                            emit(doc.type, doc);
+                        }
+                    }
+                }
             },
             // Можно добавить фильтр для репликации
             filters: {

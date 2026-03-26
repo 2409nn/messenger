@@ -10,6 +10,7 @@
   import gifSender from "@/components/gifSender.vue"
   import MessageStatus from "@/components/messageStatus.vue"
 
+  import { processImageBeforeUpload } from "@/workers/compress.js"
   import { debounce } from 'lodash'
 
   const debouncedLoad = debounce(async (chatId, localDB) => {
@@ -63,13 +64,24 @@
     }
   };
 
-  const onFileSelected = (event) => {
-    const file = event.target.files[0];
-    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+  const onFileSelected = async (event) => {
+    let file = event.target.files[0];
+    if (file.type.startsWith("image/")) {
+
+      // сжатие изображения до 1 мб
+      console.log('До сжатия:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+      file = await processImageBeforeUpload(file);
+      console.log('До сжатия:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+
       isMediaSender.value = true;
       selectedMedia.value = file;
       isVideo.value = file.type.startsWith("video/");
       previewMedia.value = URL.createObjectURL(file);
+
+    }
+    if (file.type.startsWith("video/")) {
+      emit('callAlert', 'This media type is currently unsupported, but the developer is working on it') // вызов алерта
+      return;
     }
 
   }
@@ -109,49 +121,49 @@
           time: time});
   }
 
-  function handleMediaSend (payload) {
+  async function handleMediaSend (payload) {
     mediaMessage.value = payload;
 
+    const chatId = props.activeChat.index;
+    const dbName = `${String(chatId).toLowerCase()}`
+    const localDB = await getDB(dbName);
+
     const now = new Date();
-    const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
     const time = `${now.getHours()}:${now.getMinutes()}`;
     let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
 
+    console.log(mediaMessage.value);
+
     const newMessage = {
       _id: messageId,
-      senderID: user.id,
-      avatar: user.avatar,
+      senderID: userData.id,
+      avatar: userData.avatar || profile_default,
       type: 'message-media',
       text: mediaMessage.value.text,
-      media: previewMedia.value,
       status: 'delivered',
       date: now.toISOString(),
       time: time,
-    }
+      chat: props.activeChat.index,
 
-    const designDoc = {
-      _id: '_design/chat', // Префикс _design/ обязателен!
-      views: {
-        // Название твоего "индекса"
-        count_by_type: {
-          // Функция MAP: проходит по каждому документу в базе
-          map: function (doc) {
-            if (doc.type) {
-              // emit(ключ, значение)
-              // Ключ — это по чему мы будем фильтровать/группировать
-              emit(doc.type, 1);
-            }
-          }.toString(), // Превращаем в строку для хранения в JSON
-
-          // Функция REDUCE: агрегирует данные (необязательно)
-          reduce: '_sum' // Встроенная функция для подсчета суммы
+      // ИСПРАВЛЕНИЕ ТУТ:
+      _attachments: {
+        'media_file.jpg': {
+          content_type: payload.media.type, // Обязательно берем тип из файла
+          data: payload.media             // Должен быть объект File или Blob
         }
       }
+    }
+
+
+    await sendMessage(dbName, userData.uid, newMessage);
+
+    const messagesResult = await localDB.query('chat_logic/by_type', { include_docs: true });
+    chatData[chatId] = {
+      messages: messagesResult.rows.map(row => row.doc)
     };
 
-
-    chatData[props.activeChat.index].messages.push({avatar: user.avatar, title: "Me", media: previewMedia.value, status: 'error', mediaType: selectedMedia.value.type, text: mediaMessage.value.text, time: time});
     mediaText.value = mediaMessage.value.text;
+
   }
 
   function onMediaPlayer (event) {

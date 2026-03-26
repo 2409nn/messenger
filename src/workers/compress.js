@@ -1,23 +1,29 @@
-const compressImage = (file, quality = 0.7) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+import imageCompression from 'browser-image-compression';
 
-            // Можно попутно уменьшить размер в пикселях
-            canvas.width = img.width / 2;
-            canvas.height = img.height / 2;
+// сжатие изображения
+export async function processImageBeforeUpload(file) {
+    // Сжимать только если размер изображения больше 1 мб
 
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (file.size <= 1024 * 1024) {
+        console.log("Файл и так легкий, пропускаем сжатие");
+        return file;
+    }
 
-            // Магия происходит здесь: второй аргумент — качество от 0 до 1
-            canvas.toBlob((blob) => {
-                console.log('Сжатый файл:', blob);
-            }, 'image/jpeg', quality);
-        };
+    const options = {
+        maxSizeMB: 1,           // Целевой размер — 1 МБ
+        maxWidthOrHeight: 1920,  // Ограничим разрешение до Full HD (тоже экономит вес)
+        useWebWorker: true,      // Чтобы интерфейс не фризил во время сжатия
     };
-};
+
+    try {
+        console.log(`Начинаем сжатие... Исходный вес: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        const compressedFile = await imageCompression(file, options);
+        console.log(`Готово! Новый вес: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+        return compressedFile;
+    } catch (error) {
+        console.error("Ошибка при сжатии:", error);
+        return file; // В случае ошибки возвращаем оригинал
+    }
+
+}
+

@@ -114,6 +114,10 @@ export async function sendMessage(dbName, uid, message) {
     }
 }
 
+// export async function sendMediaFile(dbName, uid, message) {
+//
+// }
+
 export async function loadChats(uid, chats) {
     const password = '12345'; // засекретить пароль
     const dbName = `db_${uid.toLowerCase()}`;

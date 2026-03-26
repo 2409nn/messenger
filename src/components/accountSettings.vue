@@ -1,7 +1,7 @@
 <script setup>
   import toggleList from "./toggleList.vue"
   import toggleButton from "./toggleButton.vue"
-  import {ref, reactive, onMounted, onUnmounted, watch} from 'vue'
+  import {ref, onMounted} from 'vue'
   import profile_default from '../assets/imgs/avatars/profile_default.png'
   import {getProfileById, updateUserProfile} from '@/db/pouchDB.js'
 
@@ -54,11 +54,15 @@
 
   const autoSwitchTheme = () => {
     const now = new Date();
-    if (now.getHours() >= 18 || now.getHours() <= 6) { settings.darkMode = true; }
-    else { settings.darkMode = false; }
+    if (now.getHours() >= 18 || now.getHours() <= 6) {
+      settings.darkMode = true;
+      toggleDark(settings.darkMode);
+    }
+    else {
+      settings.darkMode = false;
+      toggleDark(settings.darkMode);
+    }
   }
-
-  let interval
 
   const closeButton = () => {
     emit("update:isPopupVisible", false);
@@ -94,27 +98,15 @@
     await updateUserProfile(userProfile);
   }
 
-  // ежеминутная проверка времени для автоматической смены темы
-
-  function startInterval() {
-    if (settings.autoSwitchTheme) {
-      interval = setInterval(autoSwitchTheme, 60000);
-    }
-    else {
-      clearInterval(interval);
-    }
-  }
-
-  watch(() => settings.autoSwitchTheme, () => {
-    startInterval();
-  })
-
   // onMounted(async () => {
   //   await getProfileById();
   // })
 
-  onUnmounted(() => {
-    clearInterval(interval);
+  onMounted(() => {
+    if (settings.autoSwitchTheme) {
+      autoSwitchTheme();
+      console.log(settings.autoSwitchTheme);
+    }
   })
 
 </script>
@@ -242,7 +234,7 @@
 
             <li class="accountSettings__preferences__list-item">
               <toggle-button class="accountSettings__preferences__list-btn" @update:model-value="toggleDark" label="Dark mode" :model-value="settings.darkMode"></toggle-button>
-              <toggle-button class="accountSettings__preferences__list-btn" @update:model-value="(isActive) => {settings.autoSwitchTheme = isActive; startInterval()}" label="Automatically switch theme"></toggle-button>
+              <toggle-button class="accountSettings__preferences__list-btn" :model-value="settings.autoSwitchTheme" @update:model-value="(isActive) => {settings.autoSwitchTheme = isActive}" label="Automatically switch theme"></toggle-button>
             </li>
 
           </ul>
