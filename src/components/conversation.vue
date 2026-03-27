@@ -17,7 +17,7 @@
     await loadMessagesFromDB(chatId, localDB);
   }, 100); // 100мс задержка для сообщений, чтобы снизить нагрузку и предотвратить непредсказуемые последствия
 
-  import {sendMessage, getProfileById, syncToChatDB, getDB, updateLastMessageMetadata} from "@/db/pouchDB.js"
+  // import {sendMessage, getProfileById, syncToChatDB, getDB, updateLastMessageMetadata} from "@/db/pouchDB.js"
   import { userDataStore } from "@/stores/userData.js";
 
   const isMediaSender = ref(false);

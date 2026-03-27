@@ -1,10 +1,12 @@
 <script setup>
 import { ref, reactive, watch } from 'vue';
 import { db } from "../db/firebaseDB.js"
-import Timer from '../components/timer.vue';
+import Timer from './timer.vue';
 import { useRouter } from "vue-router"
 import { sendCodeToEmail } from "@/workers/sendCode.js";
 import { userDataStore } from "@/stores/userData.js"
+
+const emit = defineEmits(["correctCode"]);
 
 const codeLength = 4;
 const code = reactive(new Array(codeLength).fill(""));
@@ -59,6 +61,7 @@ const checkCode = async (code) => {
   db.getCode(uid).then((res) => {
     if (res.code === code) {
       codeBorderClass.value = "correct";
+      emit("correctCode");
       router.push('/');
     }
     else {

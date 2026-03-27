@@ -4,21 +4,13 @@
   import alert from "../components/alert.vue"
   import { sendCodeToEmail } from "../workers/sendCode.js"
   import { userDataStore } from "@/stores/userData.js"
-  import {initLocalUserDB, putUserProfile, saveDataPouchDB} from "@/db/pouchDB.js"
+  import verCode from "@/components/verCode.vue"
+  // import {initLocalUserDB, putUserProfile, saveDataPouchDB} from "@/db/pouchDB.js"
 
   import {
-    signInWithGoogle,
-    signUserOut,
-    observeAuthState,
-    auth,
-    signInWithEmail,
     verifyUserPassword,
     registerWithEmail,
-    // sendVerification,
   } from '../workers/firebase.js';
-  import {
-    signInWithEmailAndPassword
-  } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
   import { db } from "../db/firebaseDB.js";
 
   const userData = userDataStore().userData;
@@ -29,18 +21,46 @@
   const alertTitle = ref('Error');
   const alertText = ref('Registration error');
   const isAlertActive = ref(false);
+  const isVerifyEnabled = ref(false);
 
   const toggleForm = () => {
   isLogin.value = !isLogin.value;
   }
 
-  const changePage = () => {
+  const onCorrectCode = async () => {
+    const user = await registerWithEmail(email.value, password.value);
 
-    if (!isLogin.value) {
-      router.push('/verCode');
+    if (!user) {
+      console.error("Ошибка регистрации на firebase");
+      return;
+    }
 
-    } else {
-      router.push('/');
+    userData.uid = user.uid;
+    await sendCodeToEmail(userData.email, user.uid); // Отправляем письмо с кодом на почту пользователя
+    const token = await user.getIdToken(); // JWT токен
+    // отправка запроса к серверу
+
+    const res = await fetch('http://localhost:5005/auth-sync', {
+      method: 'POST',
+      body: JSON.stringify({ idToken: token, user: user, userData: userData }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const data = await res;
+    try {
+      if (data.status == "200") {
+        // сохранение в firebase
+        await db.addUser(
+            username.value,
+            email.value,
+            firstname.value,
+            lastname.value,
+            user.uid).then(() => { isVerifyEnabled.value = true; })
+      }
+
+    } catch (e) {
+      console.log("Ошибка от data.json()")
+      console.error(e);
     }
   }
 
@@ -84,48 +104,13 @@
           return;
         }
 
-        const user = await registerWithEmail(email.value, password.value);
+        userData.email = email.value;
+        userData.firstname = firstname.value;
+        userData.lastname = lastname.value;
+        userData.username = username.value;
 
-        // отправка запроса к серверу, который синхронизируется с CouchDB
-        const token = await user.getIdToken(); // JWT токен
-        const res = fetch('http://localhost:5005/auth-sync', {
-          method: 'POST',
-          body: JSON.stringify({ idToken: token }),
-          headers: { 'Content-Type': 'application/json' },
-        })
+        isVerifyEnabled.value = true;
 
-        const data = await res;
-        try {
-          if (data.status == "200") {
-
-            const db = await initLocalUserDB(user.uid, `db_${user.uid.toLowerCase()}`, "12345"); // засекретить пароль
-            await putUserProfile(
-                {_id: user.uid, username: username.value, firstname: firstname.value, lastname: lastname.value},
-            );
-          }
-
-        } catch (e) {
-          console.log("Ошибка от data.json()")
-          console.error(e);
-        }
-
-        if (user) {
-
-          userData.email = email.value;
-          userData.firstname = firstname.value;
-          userData.lastname = lastname.value;
-          userData.username = username.value;
-          userData.uid = user.uid;
-
-          await sendCodeToEmail(email.value, user.uid); // Отправляем письмо с кодом на почту пользователя
-
-          await db.addUser(
-              username.value,
-              email.value,
-              firstname.value,
-              lastname.value,
-              user.uid).then(() => { changePage() })
-        }
       }
       catch (error) {
 
@@ -152,6 +137,7 @@
       }
     }
     else {
+      isVerifyEnabled.value = false;
       try {
         const loginResult = await verifyUserPassword(email.value, password.value);
         if (loginResult.success) {
@@ -160,7 +146,7 @@
 
           // получение токена
           const token = loginResult.token; // JWT токен
-          const res = fetch('http://localhost:5005/auth-sync', {
+          const res = await fetch('http://localhost:5005/login', {
             method: 'POST',
             body: JSON.stringify({ idToken: token }),
             headers: { 'Content-Type': 'application/json' },
@@ -170,7 +156,7 @@
 
           try {
             if (data.status == "200") {
-              changePage();
+              await router.push('/');
             }
 
           } catch (e) {
@@ -199,44 +185,8 @@
       }
 
     }
-    // else if (accountStatus === "haveAccount") {
-    //   // === Вход существующего пользователя ===
-    //   try {
-    //     const loginResult = await verifyUserPassword(email, password);
-    //     if (loginResult.success) {
-    //       localStorage.setItem("email", email);
-    //       let userId = await db.getUserByEmail(email);
-    //       userId = userId.id;
-    //
-    //       localStorage.setItem("email", email);
-    //       localStorage.setItem("userId", userId);
-    //
-    //       window.location.href = './catalog.html';
-    //     }
-    //
-    //     else if (!loginResult.success) {
-    //       const error = new Error("Неверная почта или пароль");
-    //       error.code = "auth/invalid-credential";
-    //       throw error;
-    //     }
-    //
-    //   } catch (error) {
-    //
-    //     if (error.code === "auth/invalid-credential") {
-    //       alert(error.message);
-    //     }
-    //
-    //     console.group("%cОшибка регистрации", "color: red; font-weight: bold;");
-    //     console.log("Код:", error.code);
-    //     console.log("Сообщение:", error.message);
-    //     console.groupEnd();
-    //   }
-    // }
+
   };
-
-  // Обработка нажатия кнопки регистрации/входа
-
-  // Переключение вкладки регистрации/входа
 
 </script>
 
@@ -244,9 +194,9 @@
 
     <alert :title="alertTitle" :text="alertText" :is-active="isAlertActive" :on-ok="() => {}" v-model:is-active="isAlertActive" />
 
-    <section id="registration">
+    <section id="registration" >
 
-      <div class="registration-form" @submit.prevent>
+      <div v-if="!isVerifyEnabled" class="registration-form" @submit.prevent>
         <h1 class="registration-form__title">{{ isLogin ? 'Log in' : 'Registration' }}</h1>
 
         <form class="registration-form__container">
@@ -295,6 +245,8 @@
           </div>
         </form>
       </div>
+
+      <verCode v-if="isVerifyEnabled" @correct-code="onCorrectCode" />
 
     </section>
 

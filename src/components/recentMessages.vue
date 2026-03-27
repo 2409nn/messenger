@@ -2,7 +2,6 @@
 
   import { ref, watch, computed, reactive, onMounted } from 'vue'
   import { userDataStore } from "@/stores/userData.js";
-  import {loadChats, getUserProfile, getDB, setupChatListeners} from "@/db/pouchDB.js";
 
   import user1 from '@/assets/imgs/avatars/user_1.jpg'
   import user2 from '@/assets/imgs/avatars/user_2.jpg'

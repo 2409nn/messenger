@@ -3,18 +3,15 @@
   import toggleButton from "./toggleButton.vue"
   import {ref, onMounted} from 'vue'
   import profile_default from '../assets/imgs/avatars/profile_default.png'
-  import {getProfileById, updateUserProfile} from '@/db/pouchDB.js'
-
-  // доступ к localStorage через Pinia
   import { useSettingsStore } from '@/stores/settings.js'
-  const settings = useSettingsStore().settings;
-
-  // доступ к пользовательским данным
   import { userDataStore } from '@/stores/userData.js'
-  const userData = userDataStore().userData;
+  import { API_SERVER } from '@/db/config.js'
+  import {useRoamingData} from "@/stores/roaming.js";
+  // import {getProfileById, updateUserProfile} from '@/db/profile.service.js'
 
+  const settings = useSettingsStore().settings; // доступ к localStorage через Pinia
+  const userData = userDataStore().userData; // доступ к пользовательским данным
   const emit = defineEmits(['update:isPopupVisible', 'update:isDark']);
-
 
   const avatar = ref(userData.avatar); // только URL
   const userName = ref(userData.username);
@@ -73,6 +70,19 @@
     document.getElementById("app").setAttribute('data-theme', isActive ? 'dark' : 'light');
   }
 
+  const updateUserData = async (userInfo) => {
+    await fetch(`${API_SERVER}/update-profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Передача данных в теле запроса
+      body: JSON.stringify({
+        userInfo: userInfo,
+      })
+    });
+  }
+
   const onMediaLoad = (event) => {
     const file = event.target.files[0];
     if (file.type.startsWith('image/')) {
@@ -81,26 +91,20 @@
   }
 
   const onSaveChanges = async () => {
+
     // Просто копируем значения из рефов в стор
     userData.firstname = firstName.value;
     userData.lastname = lastName.value;
     userData.username = userName.value;
     userData.bio = bio.value;
 
-    // обновление в pouchDB
-    const userProfile = await getProfileById(userData.uid);
-    userProfile.firstname = userData.firstname;
-    userProfile.lastname = userData.lastname;
-    userProfile.username = userData.username;
-    userProfile.bio = userData.bio;
-    // userProfile.avatar = userData.avatar; // доделать сохранение аватара
-    console.log(userProfile);
-    await updateUserProfile(userProfile);
-  }
+    const response = await updateUserData(userData);
 
-  // onMounted(async () => {
-  //   await getProfileById();
-  // })
+    if (!response.success) {
+      console.error(response.error);
+      return;
+    }
+  }
 
   onMounted(() => {
     if (settings.autoSwitchTheme) {

@@ -1,45 +1,29 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-import { sendCodeToEmail } from "../workers/sendCode.js"
-import { userDataStore } from "@/stores/userData.js"
+import { computed, watch } from 'vue';
 
 const props = defineProps({
   seconds: {
     type: Number,
-    default: 60
+    required: true,
   }
 });
 
 const emit = defineEmits(["resendClicked"]);
 
-const timeLeft = ref(props.seconds);
-
-watch(props.seconds, (newVal) => {
-  timeLeft.value = newVal;
-})
-
-const userData = userDataStore().userData;
-let timer = null;
-
+// Мы просто форматируем то, что приходит в пропсах.
+// Computed автоматически пересчитается, когда родитель изменит seconds.
 const formattedTime = computed(() => {
-  const mins = Math.floor(timeLeft.value / 60);
-  const secs = timeLeft.value % 60;
+  const mins = Math.floor(props.seconds / 60);
+  const secs = props.seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 });
 
-onMounted(() => {
-  timer = setInterval(() => {
-    if (timeLeft.value > 0) timeLeft.value--;
-  }, 1000);
-});
-
-onUnmounted(() => clearInterval(timer));
 </script>
 
 <template>
   <div class="timer">
-    <span v-if="timeLeft > 0">Resend code in {{ formattedTime }}</span>
-    <button v-else class="resend-btn" @click="() => {emit('resendClicked')}">
+    <span v-if="props.seconds > 0">Resend code in {{ formattedTime }}</span>
+    <button v-else class="resend-btn" @click="emit('resendClicked')">
       Resend code
     </button>
   </div>

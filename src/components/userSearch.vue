@@ -2,10 +2,7 @@
   import userCard from "./userCard.vue"
   import { ref, computed } from "vue"
   import EmptyState from "@/components/emptyState.vue";
-  import Arlan from "@/assets/imgs/avatars/Arlan.jpg"
-  import Juliana from "@/assets/imgs/avatars/Juliana.jpg"
-  import Iskanderious from "@/assets/imgs/avatars/iskanderious.jpg"
-  import { getUserProfile } from "@/db/pouchDB.js";
+  import { API_SERVER } from "@/db/config.js";
 
   const isEmpty = ref(true)
   const emit = defineEmits(['update:isPopupVisible', 'userSelected']);
@@ -25,18 +22,22 @@
   async function makeSearchRequest () {
 
     if (searchText.value.length > 0) {
-      // получили профили из базы по поиску через query
-      const db = await getUserProfile();
-      let searchResults = await db.query('users/by_username', {startkey: searchText.value.toLowerCase(), endkey: searchText.value.toLowerCase() + '\ufff0', include_docs: true});
-      searchResults = searchResults.rows;
+      // 1. Параметры для GET передаем в строке запроса (URL)
+      const url = `${API_SERVER}/find-user?text=${encodeURIComponent(searchText.value)}`;
 
-      foundUsers.value = searchResults.map(row => row.doc);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
 
-      if (foundUsers.value.length > 0) {
-        isEmpty.value = false;
-      } else {
-        isEmpty.value = true;
-      }
+      if (response.status === 404) { return; }
+
+      const result = await response.json();
+      foundUsers.value = result.users || [];
+
+      isEmpty.value = foundUsers.value.length === 0;
     }
     else {
       isEmpty.value = true;

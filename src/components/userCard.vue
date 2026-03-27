@@ -1,7 +1,6 @@
 <script setup>
 
   import profileDefault from "@/assets/imgs/avatars/profile_default.png"
-  import { createChatDB } from "@/db/pouchDB.js"
   import { userDataStore } from "@/stores/userData.js";
   import { observeAuthState } from "@/workers/firebase.js";
   import {

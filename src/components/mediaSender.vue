@@ -1,7 +1,6 @@
 <script setup>
 
 import { ref } from "vue"
-import {getDB, sendMessage} from "@/db/pouchDB.js";
 import { userDataStore } from "@/stores/userData.js"
 
 const props = defineProps({

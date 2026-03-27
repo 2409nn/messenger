@@ -1,9 +1,11 @@
-// Этот файл поднимает сервер (пока что локальный) чтобы выполнить этот порядок действий:
-//
 
 const express = require('express');
 const cors = require('cors');
 const { verifyUserAndRole, handleUserSync, initChatDB } = require('./db/firebaseBinder.cjs');
+const { initLocalUserDB } = require('./db/auth.service.js');
+const { putUserProfile } = require('./db/profile.service.js');
+const { COUCHDB_URL, ADMIN_AUTH, API_SERVER } = require('./db/config.js');
+const { getProfileById, getUserProfile, updateUserProfile } = require('./db/profile.service.js');
 
 const app = express();
 app.use(cors({
@@ -17,21 +19,25 @@ app.use(express.json()); // чтобы сервер мог понимать json
 
 app.post('/auth-sync', async (req, res) => {
     try {
-        const { idToken } = req.body;
+        const { idToken, user, userData } = req.body;
 
         if (!idToken) {
             return res.status(400).send("Токен отсутствует");
         }
 
-        // Вызываем твою магическую цепочку
-        // ВАЖНО: Передаем idToken в handleUserSync
         const result = await handleUserSync(idToken);
+        const password = '12345' // засекретить пароль
+
+        await initLocalUserDB(user.uid, `db_${user.uid.toLowerCase()}`, password);
+        await putUserProfile(
+            {_id: user.uid, username: userData.username, firstname: userData.firstname, lastname: userData.lastname},
+        );
 
         // Отправляем фронтенду данные для подключения к PouchDB
         res.json({
             status: "success",
             dbName: result.dbName,
-            password: result.password // Тот самый фиксированный пароль
+            password: result.password
         });
 
     } catch (error) {
@@ -39,6 +45,23 @@ app.post('/auth-sync', async (req, res) => {
         res.status(401).send("Ошибка авторизации или создания базы");
     }
 });
+
+app.post('/login', async (req, res) => {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        return res.status(400).send("Токен отсутствует");
+    }
+
+    const result = await handleUserSync(idToken);
+
+    res.json({
+        status: "success",
+        dbName: result.dbName,
+        password: result.password
+    });
+
+})
 
 app.post('/chat-create', async (req, res) => {
     try {
@@ -69,6 +92,66 @@ app.post('/chat-create', async (req, res) => {
     } catch (error) {
         console.error("Ошибка при initChatDB:", error);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
+});
+
+app.put('/update-profile', async (req, res) => {
+
+    const userData = req.body;
+
+    // обновление в pouchDB
+    try {
+        const userProfile = await getProfileById(userData.uid);
+        userProfile.firstname = userData.firstname;
+        userProfile.lastname = userData.lastname;
+        userProfile.username = userData.username;
+        userProfile.bio = userData.bio;
+        // userProfile.avatar = userData.avatar; // доделать сохранение аватара
+
+        await updateUserProfile(userProfile);
+
+        res.status(200).json({
+            status: "success",
+            message: "Database created",
+        });
+
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+// 1. Меняем на работу с Query параметрами (например: /find-user?text=admin)
+app.get('/find-user', async (req, res) => {
+    try {
+
+        const searchText = req.query.text; // Данные берем из req.query, так как это GET запрос
+
+        if (!searchText) {
+            return res.status(400).json({ error: "Search text is required" });
+        }
+
+        const db = await getUserProfile();
+
+        // Поиск в базе
+        const searchResults = await db.query('users/by_username', {
+            startkey: searchText.toLowerCase(),
+            endkey: searchText.toLowerCase() + '\ufff0',
+            include_docs: true
+        });
+
+        const docs = searchResults.rows.map(row => row.doc);
+
+        console.log('docs: ', docs);
+
+        // Отправляем ОДИН ответ, объединяя данные, если нужно
+        return res.status(200).json({
+            status: "success",
+            users: docs,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: "error", message: "Server error" });
     }
 });
 

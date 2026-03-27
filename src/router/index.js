@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import home from "../views/home.vue"
 import reg from "../views/reg.vue"
-import verCode from "@/views/verCode.vue";
 
 const routes = [
     {
@@ -14,11 +13,6 @@ const routes = [
         name: "reg",
         component: reg,
     },
-    {
-        path: "/verCode",
-        name: "verCode",
-        component: verCode,
-    }
 ]
 
 const router = createRouter({
