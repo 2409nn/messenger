@@ -5,7 +5,6 @@
   import { sendCodeToEmail } from "../workers/sendCode.js"
   import { userDataStore } from "@/stores/userData.js"
   import verCode from "@/components/verCode.vue"
-  // import {initLocalUserDB, putUserProfile, saveDataPouchDB} from "@/db/pouchDB.js"
 
   import {
     verifyUserPassword,
@@ -36,7 +35,6 @@
     }
 
     userData.uid = user.uid;
-    await sendCodeToEmail(userData.email, user.uid); // Отправляем письмо с кодом на почту пользователя
     const token = await user.getIdToken(); // JWT токен
     // отправка запроса к серверу
 
@@ -44,9 +42,9 @@
       method: 'POST',
       body: JSON.stringify({ idToken: token, user: user, userData: userData }),
       headers: { 'Content-Type': 'application/json' },
-    })
+    });
 
-    const data = await res;
+    const data = res;
     try {
       if (data.status == "200") {
         // сохранение в firebase
@@ -108,6 +106,8 @@
         userData.firstname = firstname.value;
         userData.lastname = lastname.value;
         userData.username = username.value;
+
+        await sendCodeToEmail(userData.email); // Отправляем письмо с кодом на почту пользователя
 
         isVerifyEnabled.value = true;
 

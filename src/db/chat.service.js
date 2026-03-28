@@ -1,6 +1,5 @@
 // Логика создания комнат, управления правами (security) и отправки сообщений.
 
-
 import PouchDB from 'pouchdb';
 import { COUCHDB_URL, ADMIN_AUTH, API_SERVER, SYNC_OPTS } from './config.js';
 
@@ -45,3 +44,41 @@ export async function sendMessage(dbName, uid, message) {
     const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
     await remoteDB.put(message);
 }
+
+export async function loadUserChats(uid) {
+    const password = '12345'; // засекретить пароль
+    const dbName = `db_${String(uid).toLowerCase()}`;
+
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
+
+    const db = new PouchDB(remoteURL, { skip_setup: true });
+
+    return await db.allDocs({include_docs: true, startkey: 'chat_', endkey: 'chat_\uffff'});
+
+
+    // Функция для загрузки всех данных из локальной базы
+    // const updateChats = async () => {
+    //     const allDocs = await localDB.allDocs({include_docs: true, startkey: 'chat_', endkey: 'chat_\uffff'});
+    //     allDocs.rows.forEach(row => {
+    //         chats.push(row.doc); // Наполняем наш объект
+    //     });
+    //
+    // };
+
+    // Запускаем синхронизацию
+    // localDB.sync(remoteDB, {
+    //     live: true,
+    //     retry: true,
+    // })
+    //     .on('change', async (info) => {
+    //         console.log('Данные изменились, обновляем список...');
+    //         await updateChats(); // Перечитываем базу при каждом изменении
+    //     })
+    //     .on('error', (err) => {
+    //         console.error('Ошибка синхронизации:', err);
+    //     });
+
+    // Первоначальная загрузка
+    // await updateChats();
+}
+

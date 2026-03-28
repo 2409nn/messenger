@@ -109,7 +109,6 @@
   onMounted(() => {
     if (settings.autoSwitchTheme) {
       autoSwitchTheme();
-      console.log(settings.autoSwitchTheme);
     }
   })
 

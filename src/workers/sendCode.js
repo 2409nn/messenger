@@ -6,7 +6,7 @@ const generateCode = () => {
 };
 
 
-export const sendCodeToEmail = async (email, uid) => {
+export const sendCodeToEmail = async (email) => {
     const verificationCode = generateCode(); // Создаем код
 
     try {
@@ -21,7 +21,7 @@ export const sendCodeToEmail = async (email, uid) => {
         );
 
         localStorage.setItem("codeCreatedAt", Date.now());
-        await db.addCode(verificationCode, uid);
+        await db.addCode(verificationCode, email);
 
     } catch (error) {
         console.error("Ошибка отправки:", error);

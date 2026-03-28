@@ -1,11 +1,28 @@
 
 const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
 const cors = require('cors');
 const { verifyUserAndRole, handleUserSync, initChatDB } = require('./db/firebaseBinder.cjs');
-const { initLocalUserDB } = require('./db/auth.service.js');
-const { putUserProfile } = require('./db/profile.service.js');
+const { initLocalUserDB, getDB } = require('./db/auth.service.js');
 const { COUCHDB_URL, ADMIN_AUTH, API_SERVER } = require('./db/config.js');
-const { getProfileById, getUserProfile, updateUserProfile } = require('./db/profile.service.js');
+const { putUserProfile, getProfileById, getUserProfile, updateUserProfile } = require('./db/profile.service.js');
+const {loadUserChats} = require("./db/chat.service.js");
+
+// redis подключить к следующему обновлению
+// const redis = require('redis');
+//
+// // 1. Создаем клиент Redis
+// const client = redis.createClient({
+//     url: 'redis://localhost:6996' // Замените на ваш конфиг, если Redis в облаке
+// });
+//
+// client.on('error', err => console.log('Redis Error', err));
+
+// Коннектимся к базе при старте
+// (async () => {
+//     await client.connect();
+// })();
 
 const app = express();
 app.use(cors({
@@ -15,7 +32,34 @@ app.use(cors({
 }));
 app.use(express.json()); // чтобы сервер мог понимать json в теле запроса
 
-// Главный эндпоинт для синхронизации
+app.use('/sync/:dbName', createProxyMiddleware({
+    // Куда на самом деле перенаправлять запрос
+    target: 'http://localhost:5984',
+
+    // Подменять заголовок Origin (важно для обхода некоторых проверок безопасности)
+    changeOrigin: true,
+
+    // 2. Переписываем путь.
+    // Клиент стучится в: /sync/chat_123
+    // Прокси превращает это в: /chat_123 (как того ждет CouchDB)
+    pathRewrite: (path, req) => {
+        return `/${req.params.dbName}`;
+    },
+
+    onProxyReq: (proxyReq, req, res) => {
+        const auth = Buffer.from('admin:12345').toString('base64');
+        // Удаляем старый заголовок, если он был, и ставим новый
+        proxyReq.removeHeader('Authorization');
+        proxyReq.setHeader('Authorization', `Basic ${auth}`);
+
+        console.log(`[Proxy] Авторизую запрос к ${req.params.dbName} как админ`);
+    },
+
+    // 4. Поддержка WebSocket/Long Polling (нужно для live: true)
+    ws: true
+}));
+
+// Эндпоинты
 
 app.post('/auth-sync', async (req, res) => {
     try {
@@ -120,7 +164,6 @@ app.put('/update-profile', async (req, res) => {
     }
 })
 
-// 1. Меняем на работу с Query параметрами (например: /find-user?text=admin)
 app.get('/find-user', async (req, res) => {
     try {
 
@@ -141,8 +184,6 @@ app.get('/find-user', async (req, res) => {
 
         const docs = searchResults.rows.map(row => row.doc);
 
-        console.log('docs: ', docs);
-
         // Отправляем ОДИН ответ, объединяя данные, если нужно
         return res.status(200).json({
             status: "success",
@@ -154,6 +195,50 @@ app.get('/find-user', async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+
+app.post('/chats-load', async (req, res) => {
+
+    const uid = req.body.uid;
+    console.log(uid);
+    let chats = await loadUserChats(uid);
+    chats = chats.rows;
+
+    const chatsData = {};
+
+    for (let chatRow of chats) { // используем другое имя, чтобы не путаться
+        const chat = chatRow.doc;
+        const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
+        const interlocatorId = chat.members_id.find(id => id !== uid);
+
+        try {
+            const db = await getUserProfile();
+            const interlocatorProfile = await db.get(interlocatorId);
+
+            // Используем await вместо .then(), чтобы цикл ждал ответа
+            let lastMessage = null;
+            try {
+                lastMessage = await chatDB.get('last_message_metadata');
+            } catch (e) {
+                console.log("Метаданные не найдены для чата:", chat._id);
+            }
+
+            chatsData[chat._id] = {
+                chatInfo: interlocatorProfile,
+                lastMessage: lastMessage,
+                interlocatorId: interlocatorId
+            };
+        } catch (e) {
+            console.error("Ошибка загрузки профиля:", interlocatorId, e);
+        }
+    }
+
+    return res.status(200).json({
+        status: "success",
+        chatsData: chatsData,
+    })
+
+})
+
 
 const PORT = 5005;
 app.listen(PORT, () => {

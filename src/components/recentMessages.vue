@@ -1,12 +1,9 @@
 <script setup>
 
   import { ref, watch, computed, reactive, onMounted } from 'vue'
+  import { API_SERVER } from "@/db/config.js";
   import { userDataStore } from "@/stores/userData.js";
-
-  import user1 from '@/assets/imgs/avatars/user_1.jpg'
-  import user2 from '@/assets/imgs/avatars/user_2.jpg'
-  import user3 from '@/assets/imgs/avatars/user_3.jpg'
-  import user4 from '@/assets/imgs/avatars/user_4.jpg'
+  import { loadUserChats } from "@/db/chat.service.js"
   import EmptyState from "@/components/emptyState.vue";
   import profile_default from "@/assets/imgs/avatars/profile_default.png"
   import counter from "@/components/counter.vue";
@@ -26,9 +23,8 @@
 
   const activeIndex = ref(null);
 
-  const chats = reactive([]); // Реактивный объект для Vue
   const uid = userDataStore().userData.uid;
-  const interlocatorsData = reactive({}); // хранит в себе профильные данные всех собеседников
+  const chatsData = ref({}); // хранит в себе данные о чатах
 
   const allChatDBs = {}; // Объект для хранения инстансов БД, чтобы не плодить лишние
 
@@ -36,72 +32,63 @@
     // Ждем, пока загрузятся сами чаты (у тебя там await loadChats)
     // Предположим, chats — это массив после loadChats
 
-
-
-    for (const chat of chats) {
-      const chatDB = await getDB(`http://${uid}:12345@localhost:5984/${chat._id}`); // засекретить пароль
-      let interlocatorId = chat.members_id.filter(id => id !== uid)[0];
-
-      try {
-        const db = await getUserProfile();
-        var result = await db.get(interlocatorId);
-        var lastMessage;
-        chatDB.get('last_message_metadata').then((response) => {
-          lastMessage = response;
-        }).catch((e) => {
-          console.log("Не найден документ last_message_metadata: ", e);
-        });
-
-      } catch (e) {
-        console.error("Ошибка загрузки профиля:", interlocatorId, e);
+    const response = await fetch(`${API_SERVER}/chats-load`, {
+      method: "POST",
+      body: JSON.stringify({
+        uid: uid,
+      }),
+      headers: {
+        "Content-Type": "application/json"
       }
+    });
 
-      // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
-      interlocatorsData[chat._id] = {
-        id: interlocatorId,
-        firstname: result.firstname || 'Без имени',
-        lastname: result.lastname || '',
-        avatar: result.avatar || profile_default,
-        lastMessage: lastMessage || '',
-      };
+    if (!response.ok) {
+      console.error('Не удалось получить чаты');
+      return;
     }
+
+    const chatsData = await response.json();
+
+    return chatsData;
+
   };
 
+  // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
+  // interlocatorsData[chat._id] = {
+  //   id: interlocatorId,
+  //   firstname: chatInfo.firstname || 'Без имени',
+  //   lastname: chatInfo.lastname || '',
+  //   avatar: chatInfo.avatar || profile_default,
+  //   lastMessage: lastMessage || '',
+  // };
+
+
+
   onMounted(async () => {
-    await loadChats(uid, chats);
-    await fetchProfiles();
+    // const chats = await loadUserChats(uid);
+    await fetchProfiles(uid).then((res) => {
+      chatsData.value = res.chatsData;
+    });
 
     // Запускаем "живое" обновление
-    await setupChatListeners(allChatDBs, chats, interlocatorsData, uid);
+    // await setupChatListeners(allChatDBs, chats, interlocatorsData, uid);
   });
 
-  console.log(interlocatorsData);
-
-  const usersData = {
-    personalChats: interlocatorsData,
-    channels: {},
-    live: {},
-  }
 
   const showData = computed(() => {
-    if (props.activePage === 'stream') return usersData.live;
-    if (props.activePage === 'channels') return usersData.channels;
-    if (props.activePage === 'chats') return usersData.personalChats;
+    if (props.activePage === 'stream') return {};
+    if (props.activePage === 'channels') return {};
+    if (props.activePage === 'chats') return chatsData.value;
+
+    return {};
   });
 
-  // Длина объекта с данными которые нужно отобразить
-  const showDataLength = computed(() => Object.keys(showData.value).length);
-
-  // Слежка за изменением props.activePage
-  // watch(() => props.activePage, (newActivePage) => {
-  //
-  // });
+  const showDataLength = computed(() => Object.keys(showData.value).length); // Длина объекта с данными которые нужно отобразить
 
   const emit = defineEmits(["clickChat"])
 
   const onClickChat = (index, avatar, firstname, lastname) => {
     // index – id чата
-    console.log(chats);
     let tempIndex = activeIndex.value
     activeIndex.value = index;
     if (tempIndex === index && props.isChatOpen) {
@@ -110,24 +97,31 @@
     emit("clickChat", {'index': activeIndex.value, 'avatar': avatar, 'firstname': firstname, 'lastname': lastname});
   }
 
+  const unreadCount = 0;
+
 </script>
 
 <template>
   <div class="recent">
     <ul class="recent__chats">
-      <li class="recent__chat" v-for="(user, index) in showData" @click="onClickChat(index, user.avatar, user.firstname, user.lastname)"
-          :class="{ active: activeIndex === index && props.isChatOpen }">
+      <li
+          class="recent__chat"
+          v-for="(chat, id) in showData"
+          :key="id"
+          @click="onClickChat(id, chat.chatInfo.avatar, chat.chatInfo.firstname, chat.chatInfo.lastname)"
+          :class="{ active: activeIndex === id && props.isChatOpen }"
+      >
         <div class="recent__avatar">
-          <img class="recent__avatar-img" :src="user.avatar" alt="avatar">
+          <img class="recent__avatar-img" :src="chat.chatInfo?.avatar || profile_default" alt="avatar">
           <div class="recent__avatar-online online"></div>
         </div>
         <div class="recent__info">
           <div class="recent__info-top">
-            <p class="recent__info-firstname">{{ user.firstname }}</p>
-            <p class="recent__info-time">{{ user.time }}</p>
+            <p class="recent__info-firstname">{{ chat.chatInfo?.firstname }}</p>
+            <p class="recent__info-time">{{ chat.lastMessage?.time }}</p>
           </div>
-          <p class="recent__info-message">{{ user.lastMessage.lastText }}</p>
-          <counter class="recent__info-newMessages" :count="1232213" />
+          <p class="recent__info-message">{{ chat.lastMessage?.lastText }}</p>
+          <counter class="recent__info-newMessages" :count="unreadCount" />
         </div>
       </li>
     </ul>

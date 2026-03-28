@@ -18,7 +18,7 @@
 </script>
 
 <template>
-  <div class="counter">
+  <div class="counter" v-if="count > 0">
     <span class="counter__count">{{ countString }}</span>
   </div>
 </template>

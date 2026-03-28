@@ -2,10 +2,9 @@
 
   import profileDefault from "@/assets/imgs/avatars/profile_default.png"
   import { userDataStore } from "@/stores/userData.js";
-  import { observeAuthState } from "@/workers/firebase.js";
-  import {
-    getAuth,
-  } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+  import { getAuth } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+  import { API_SERVER } from '@/db/config.js'
+  import { createChatDB } from '@/db/chat.service.js'
 
 
   const props = defineProps({
@@ -34,16 +33,15 @@
   })
 
   const emit = defineEmits(['cardClicked'])
+  const userData = userDataStore().userData;
 
   const onCardClick = async () => {
     emit('cardClicked', {firstName: props.firstName, lastName: props.lastName, username: props.username});
-    const userData = userDataStore().userData;
-
-    console.log(props.uid)
 
     if (userData.uid === props.uid) { console.error('нельзя писать самому себе'); return }
 
     try {
+      // проверка на то, авторизован ли пользователь, перед тем как писать кому-то
       const auth = await getAuth();
       const user = auth.currentUser;
 
@@ -53,7 +51,8 @@
       }
 
       const token = await user.getIdToken()
-      const localChatDB = await createChatDB([userData.uid, props.uid], token) // создаем чат
+
+      const chatId = await createChatDB([userData.uid, props.uid], token) // создаем чат
 
     }
 

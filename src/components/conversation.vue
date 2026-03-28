@@ -1,318 +1,217 @@
 <script setup>
-  import userAvatar1 from '@/assets/imgs/avatars/user_1.jpg'
-  import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg'
-  import profile_default from '@/assets/imgs/avatars/profile_default.png'
-  import { computed, ref, reactive, nextTick, watch, onMounted } from "vue"
-  import emptyState from "@/components/emptyState.vue"
-  import mediaSender from "@/components/mediaSender.vue"
-  import mediaPlayer from "@/components/mediaPlayer.vue"
-  import bottomScroller from "@/components/bottomScroller.vue"
-  import gifSender from "@/components/gifSender.vue"
-  import MessageStatus from "@/components/messageStatus.vue"
+import { computed, ref, reactive, nextTick, watch } from "vue";
+import { debounce } from 'lodash';
+import PouchDB from "pouchdb-browser";
 
-  import { processImageBeforeUpload } from "@/workers/compress.js"
-  import { debounce } from 'lodash'
+// --- Компоненты ---
+import emptyState from "@/components/emptyState.vue";
+import mediaSender from "@/components/mediaSender.vue";
+import mediaPlayer from "@/components/mediaPlayer.vue";
+import bottomScroller from "@/components/bottomScroller.vue";
+import gifSender from "@/components/gifSender.vue";
+import MessageStatus from "@/components/messageStatus.vue";
 
-  const debouncedLoad = debounce(async (chatId, localDB) => {
-    await loadMessagesFromDB(chatId, localDB);
-  }, 100); // 100мс задержка для сообщений, чтобы снизить нагрузку и предотвратить непредсказуемые последствия
+// --- Утилиты и Сервисы ---
+import { processImageBeforeUpload } from "@/workers/compress.js";
+import { userDataStore } from "@/stores/userData.js";
 
-  // import {sendMessage, getProfileById, syncToChatDB, getDB, updateLastMessageMetadata} from "@/db/pouchDB.js"
-  import { userDataStore } from "@/stores/userData.js";
+// --- Изображения ---
+import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg';
+import profile_default from '@/assets/imgs/avatars/profile_default.png';
 
-  const isMediaSender = ref(false);
-  const isMediaPlayer = ref(false);
-  const isVideo = ref(false);
-  const isGifs = ref(false);
+const props = defineProps({
+  activeChat: { type: Object, default: () => ({}) },
+  chatData: Object, // Реактивный объект из родителя
+  isChatOpen: { type: Boolean, default: false }
+});
 
-  const mediaMessage = ref(null); // объект выбранного медиа + текст
-  const selectedMedia = ref(null); // объект выбранного медиа
-  const previewMedia = ref(null); // только URL
-  const mediaText = ref('');
+const emit = defineEmits([
+  'burgerClicked', 'audioCallClicked', 'videoCallClicked', 'callAlert'
+]);
 
-  const currentScroll = ref(0);
-  const userData = userDataStore().userData;
+const userData = userDataStore().userData;
+const chatDOM = ref(null);
+const typedText = ref('');
+const currentScroll = ref(0);
+const chatDataLocal = reactive({}); // Локальное хранилище сообщений текущего чата
 
-  const emit = defineEmits(['burgerClicked', 'audioCallClicked', 'videoCallClicked', 'callAlert', 'lastMessageUpdated']);
-  const props = defineProps({
-    activeChat: {
-      type: Object,
-      default: () => ({})
-    },
-    chatData: Object,
-    isChatOpen: {
-      type: Boolean,
-      default: false,
-    }
-  });
+// Состояние медиа-попапов
+const isMediaSender = ref(false);
+const isMediaPlayer = ref(false);
+const isGifs = ref(false);
+const isVideo = ref(false);
 
-  // Функция для вытягивания сообщений из PouchDB
-  const loadMessagesFromDB = async (chatId, localDB) => {
-    try {
-      const result = await localDB.query('chat_logic/by_type', {
-        include_docs: true,
-        attachments: true // если есть фото/аудио
-      });
+const previewMedia = ref(null);
+const mediaText = ref('');
+const selectedMediaFile = ref(null);
 
-      // Обновляем наш реактивный объект chatData
-      chatData[chatId] = {
-        messages: result.rows.map(row => row.doc)
-      };
+let currentSync = null;
 
-    } catch (err) {
-      console.error("Ошибка загрузки сообщений:", err);
+// --- Инициализация локальной базы данных с удаленной ---
+
+const localDB = new PouchDB('my_local_chat');
+
+// Мы создаем подключение к Express, а не к CouchDB напрямую
+const remoteDB = new PouchDB('http://localhost:5005/sync/chat_id_123', {
+  skip_setup: true,
+  fetch: (url, opts) => {
+    // В будущем сюда вставишь JWT токен
+    // opts.headers.set('Authorization', `Bearer ${token}`);
+    return PouchDB.fetch(url, opts);
+  }
+});
+
+// Запускаем магию синхронизации
+localDB.sync(remoteDB, {
+  live: true,
+  retry: true,
+  checkpoint: false,
+});
+
+// --- Логика работы с сообщениями ---
+
+const debouncedLoad = debounce(async (chatId, db) => {
+  await loadMessagesFromDB(chatId, db);
+}, 150);
+
+const currentMessages = computed(() => {
+  return chatDataLocal[props.activeChat?.index] || [];
+});
+
+// --- Обработка событий ---
+
+const onFileSelected = async (event) => {
+  let file = event.target.files[0];
+  if (!file) return;
+
+  if (file.type.startsWith("image/")) {
+    file = await processImageBeforeUpload(file);
+    selectedMediaFile.value = file;
+    previewMedia.value = URL.createObjectURL(file);
+    isVideo.value = false;
+    isMediaSender.value = true;
+  } else if (file.type.startsWith("video/")) {
+    emit('callAlert', 'Video support is coming soon!');
+  }
+};
+
+const handleMediaSend = async (payload) => {
+  const chatId = props.activeChat.index;
+  const dbName = chatId.toLowerCase();
+  const now = new Date();
+
+  const newMessage = {
+    _id: `msg:${userData.uid}:${Date.now()}`,
+    senderID: userData.id,
+    avatar: userData.avatar || profile_default,
+    type: 'message-media',
+    text: payload.text,
+    status: 'delivered',
+    date: now.toISOString(),
+    time: formatTime(now),
+    chat: chatId,
+    _attachments: {
+      'media_file.jpg': {
+        content_type: payload.media.type,
+        data: payload.media
+      }
     }
   };
 
-  const onFileSelected = async (event) => {
-    let file = event.target.files[0];
-    if (file.type.startsWith("image/")) {
+  await sendMessage(dbName, userData.uid, newMessage);
+  const db = await getDB(dbName);
+  await loadMessagesFromDB(chatId, db);
+};
 
-      // сжатие изображения до 1 мб
-      console.log('До сжатия:', (file.size / 1024 / 1024).toFixed(2), 'MB');
-      file = await processImageBeforeUpload(file);
-      console.log('До сжатия:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+const onSubmitClick = async () => {
+  if (!typedText.value.trim()) return;
 
-      isMediaSender.value = true;
-      selectedMedia.value = file;
-      isVideo.value = file.type.startsWith("video/");
-      previewMedia.value = URL.createObjectURL(file);
+  const chatId = props.activeChat.index;
+  const dbName = chatId.toLowerCase();
+  const now = new Date();
 
-    }
-    if (file.type.startsWith("video/")) {
-      emit('callAlert', 'This media type is currently unsupported, but the developer is working on it') // вызов алерта
-      return;
-    }
-
-  }
-
-  const currentMessages = computed(() => {
-    const index = props.activeChat?.index;
-    // Если чат в chatData есть, пробуем взять messages, если их нет - пустой массив
-    return chatData[index]?.messages || [];
-  });
-
-  function handleGifSend (payload) {
-    const gifURL = payload;
-
-    const now = new Date();
-    const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
-    const time = `${now.getHours()}:${now.getMinutes()}`;
-    let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
-
+  try {
+    const user = await getProfileById(userData.uid);
     const newMessage = {
-      _id: messageId,
+      _id: `msg:${userData.uid}:${Date.now()}`,
       senderID: user.id,
-      avatar: user.avatar,
-      type: 'gif',
-      media: gifURL,
+      type: 'message',
+      avatar: user.avatar || profile_default,
+      firstname: user.firstname,
+      lastname: user.lastname,
       status: 'delivered',
+      text: typedText.value,
       date: now.toISOString(),
-      time: time,
-    }
-
-    chatData[props.activeChat.index].messages.push(
-        {avatar: user.avatar,
-          title: "Me",
-          media: newMessage.media,
-          status: 'pending',
-          mediaType: newMessage.type,
-          text: newMessage.text,
-          time: time});
-  }
-
-  async function handleMediaSend (payload) {
-    mediaMessage.value = payload;
-
-    const chatId = props.activeChat.index;
-    const dbName = `${String(chatId).toLowerCase()}`
-    const localDB = await getDB(dbName);
-
-    const now = new Date();
-    const time = `${now.getHours()}:${now.getMinutes()}`;
-    let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
-
-    console.log(mediaMessage.value);
-
-    const newMessage = {
-      _id: messageId,
-      senderID: userData.id,
-      avatar: userData.avatar || profile_default,
-      type: 'message-media',
-      text: mediaMessage.value.text,
-      status: 'delivered',
-      date: now.toISOString(),
-      time: time,
-      chat: props.activeChat.index,
-
-      // ИСПРАВЛЕНИЕ ТУТ:
-      _attachments: {
-        'media_file.jpg': {
-          content_type: payload.media.type, // Обязательно берем тип из файла
-          data: payload.media             // Должен быть объект File или Blob
-        }
-      }
-    }
-
-
-    await sendMessage(dbName, userData.uid, newMessage);
-
-    const messagesResult = await localDB.query('chat_logic/by_type', { include_docs: true });
-    chatData[chatId] = {
-      messages: messagesResult.rows.map(row => row.doc)
+      time: formatTime(now),
+      chat: chatId
     };
 
-    mediaText.value = mediaMessage.value.text;
+    await sendMessage(dbName, userData.uid, newMessage);
+    const db = await getDB(dbName);
+    await loadMessagesFromDB(chatId, db);
 
+    typedText.value = '';
+  } catch (err) {
+    console.error("Ошибка при отправке:", err);
   }
+};
 
-  function onMediaPlayer (event) {
-    previewMedia.value = event.target.src;
-    mediaText.value = event.target.alt;
-    isVideo.value = event.target.nodeName === "VIDEO";
+// --- Скролл и UI утилиты ---
 
-    isMediaPlayer.value = true
-  }
+const formatTime = (date) => `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-  const onBurgerClicked = (event) => {
-    emit('burgerClicked', event)
-  }
-
-  let chatData = reactive({
-
-  });
-
-  const onAudioCallClick = () => {
-    emit('audioCallClicked', true);
-  }
-
-  const onVideoCallClick = () => {
-    emit('videoCallClicked', true);
-  }
-
-  const typedText = ref('');
-  const chatDOM = ref(null);
-
-  const scrollToBottom = async (isInitial) => {
-    await nextTick();
-    if (chatDOM.value) {
-      chatDOM.value.scrollTo({
-        top: chatDOM.value.scrollHeight,
-        behavior: isInitial ? 'instant' : 'smooth', // если первоначальная загрузка, то скролл instant
-      })
-    }
-  }
-
-  // синхронизирование локальной базы данных с удаленной
-  let currentSync = null; // Глобальная переменная в рамках скрипта для хранения текущего процесса
-
-  const onSubmitClick = async () => {
-
-    // проверка на пустое сообщение
-    if (typedText.value.trim().length > 0) {
-      const now = new Date();
-
-      const user = await getProfileById(userData.uid);
-      const time = `${now.getHours()}:${now.getMinutes()}`;
-      let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
-
-      const newMessage = {
-        _id: messageId,
-        senderID: user.id,
-        type: 'message',
-        avatar: user.avatar || profile_default,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        status: 'delivered',
-        text: typedText.value,
-        date: now.toISOString(),
-        time: time,
-        chat: props.activeChat.index
-      }
-
-      // сохранение сообщения в базу данных
-      const chatId = props.activeChat.index;
-      const dbName = `${String(chatId).toLowerCase()}`
-
-      const localDB = await getDB(dbName);
-      await sendMessage(dbName, userData.uid, newMessage)
-
-      const messagesResult = await localDB.query('chat_logic/by_type', { include_docs: true });
-      chatData[chatId] = {
-        messages: messagesResult.rows.map(row => row.doc)
-      };
-
-      typedText.value = '';
-    }
-
-  }
-
-  // получение значения скролла с низа
-  const onChatScroll = (event) => {
-    currentScroll.value = event.target.scrollHeight - event.target.clientHeight - event.target.scrollTop;
-  }
-
-  const onMicroClick = () => {
-    emit('callAlert', 'This function is currently unavailable, but developer is working on that') // вызов алерта
-  }
-
-  // Следим за сменой активного чата
-  watch(() => props.activeChat?.index, async (newChatId) => {
-
-    if (!newChatId) { return; }
-    // Если уже идет синхронизация другого чата — останавливаем ее
-    if (currentSync) {
-      currentSync.cancel();
-      console.log("Старая синхронизация остановлена");
-    }
-
-    const dbName = newChatId.toLowerCase();
-
-    // 1. Подключаемся к базе и запускаем синхронизацию
-    const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
-
-    // 2. СРАЗУ загружаем то, что уже есть в локальной базе (не дожидаясь сети)
-    await loadMessagesFromDB(newChatId, localDB);
-
-    // 3. Подписываемся на будущие изменения (новые сообщения от собеседника)
-    syncProcessor.on('change', async (info) => {
-      // PouchDB передает массив изменений. Проверяем каждый документ.
-      const changes = info.change.docs;
-
-      // Если среди изменений ТОЛЬКО наш мета-документ — выходим
-      const isOnlyMetadata = changes.every(doc => doc._id === "last_message_metadata");
-      if (isOnlyMetadata) return;
-
-      // Если есть новые сообщения (не метаданные)
-      const lastMessage = changes[changes.length - 1];
-
-      // Загружаем сообщения для UI (через debounce)
-      debouncedLoad(newChatId, localDB);
-
-      // Обновляем метаданные ТОЛЬКО если это было реальное сообщение
-      if (lastMessage.type === 'message') {
-        await updateLastMessageMetadata(localDB, lastMessage);
-      }
+const scrollToBottom = async (smooth = true) => {
+  await nextTick();
+  if (chatDOM.value) {
+    chatDOM.value.scrollTo({
+      top: chatDOM.value.scrollHeight,
+      behavior: smooth ? 'smooth' : 'instant'
     });
+  }
+};
 
-      // При смене чата скролл мгновенно
-      await scrollToBottom(true);
+const onChatScroll = (e) => {
+  currentScroll.value = e.target.scrollHeight - e.target.clientHeight - e.target.scrollTop;
+};
 
-  });
+// --- Watchers (Наблюдатели) ---
 
-  // Следим за новыми сообщениями внутри чата и количеством сообщений
-  watch(() => currentMessages.value?.length, (newVal, oldVal) => {
+// Переключение чата
+watch(() => props.activeChat?.index, async (newChatId) => {
+  if (!newChatId) return;
 
-    if (newVal === undefined) return; // Если newVal undefined или null (чат еще грузится), ничего не делаем
+  if (currentSync) currentSync.cancel();
 
-    const isNewMessage = oldVal !== undefined && oldVal !== 0 && newVal > oldVal;
+  const dbName = newChatId.toLowerCase();
+  // const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
+  // currentSync = syncProcessor;
 
-    if (currentScroll.value < 400) {
-      scrollToBottom(!isNewMessage);
-    }
-  });
+  // Первичная загрузка
+  // await loadMessagesFromDB(newChatId, localDB);
+  await scrollToBottom(false);
 
+  // Слушатель изменений
+  // syncProcessor.on('change', async (info) => {
+  //   const changes = info.change.docs;
+  //   const isOnlyMeta = changes.every(doc => doc._id === "last_message_metadata");
+  //   if (isOnlyMeta) return;
+  //
+  //   debouncedLoad(newChatId, localDB);
+  //
+  //   // Обновление метаданных для списка чатов
+  //   const lastMsg = changes[changes.length - 1];
+  //   if (lastMsg.type === 'message' || lastMsg.type === 'message-media') {
+  //     await updateLastMessageMetadata(localDB, lastMsg);
+  //   }
+  // });
+});
 
+// Авто-скролл при новых сообщениях
+watch(() => currentMessages.value.length, (newVal, oldVal) => {
+  if (newVal > oldVal && currentScroll.value < 400) {
+    scrollToBottom(true);
+  }
+});
 </script>
 
 <template>

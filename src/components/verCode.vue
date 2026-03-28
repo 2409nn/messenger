@@ -56,9 +56,9 @@ const handlePaste = (event) => {
 };
 
 const checkCode = async (code) => {
-  const uid = userData.uid;
+  const email = userData.email;
 
-  db.getCode(uid).then((res) => {
+  db.getCode(email).then((res) => {
     if (res.code === code) {
       codeBorderClass.value = "correct";
       emit("correctCode");

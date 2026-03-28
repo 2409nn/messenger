@@ -88,22 +88,22 @@ export class DataBase {
     }
 
     // сохранение временного кода в базу данных
-    async addCode(code, uid) {
+    async addCode(code, email) {
         try {
-            const codeRef = doc(this.db, "codes", uid);
+            const codeRef = doc(this.db, "codes", email);
             await setDoc(codeRef, {
                 code,
-                uid
+                email
             })
         } catch (error) {
             console.error("Ошибка при сохранения кода:", error);
         }
     }
 
-    async getCode(uid) {
+    async getCode(email) {
         try {
             const usersRef = collection(this.db, "codes");
-            const q = query(usersRef, where("uid", "==", uid));
+            const q = query(usersRef, where("email", "==", email));
             const querySnapshot = await getQueryDocs(q);
 
             if (querySnapshot.empty) {return null;} // Нет такого пользователя
