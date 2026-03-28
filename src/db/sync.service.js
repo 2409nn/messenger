@@ -15,16 +15,34 @@ export async function syncToChatDB(chatId, uid) {
 }
 
 export async function updateLastMessageMetadata(chatDB, message) {
-    const lastMessage = await chatDB.get('last_message_metadata');
-    lastMessage.text = message.text;
-    lastMessage.time = message.time;
-    lastMessage.type = message.type;
+    const docId = 'last_message_metadata';
 
     try {
+        let lastMessage;
+
+        try {
+            // Пытаемся получить существующий документ
+            lastMessage = await chatDB.get(docId);
+        } catch (e) {
+            // Если документ не найден (ошибка 404), создаем новый объект
+            if (e.status === 404 || e.name === 'not_found') {
+                lastMessage = { _id: docId };
+            } else {
+                // Если ошибка другого рода — пробрасываем её выше
+                throw e;
+            }
+        }
+
+        // Обновляем поля (теперь lastMessage точно существует)
+        lastMessage.text = message.text;
+        lastMessage.time = message.time;
+        lastMessage.type = message.type;
+
+        // Сохраняем (put работает и на создание, и на обновление, если есть _rev)
         await chatDB.put(lastMessage);
 
     } catch (e) {
-        console.error(e);
+        console.error("Ошибка при обновлении метаданных:", e);
     }
 }
 

@@ -6,6 +6,7 @@ import { sendMessage } from "@/db/chat.service.js";
 import {getDB, getRemoteDB} from "@/db/auth.service.js"
 import {updateLastMessageMetadata} from "@/db/sync.service.js"
 
+
 // --- Компоненты ---
 import emptyState from "@/components/emptyState.vue";
 import mediaSender from "@/components/mediaSender.vue";
@@ -76,6 +77,35 @@ const currentMessages = computed(() => {
 })
 
 // --- Обработка событий ---
+
+function handleGifSend (payload) {
+  const gifURL = payload;
+
+  const now = new Date();
+  const user = {id: 1488, firstname: "Iskanderious", avatar: userAvatar2}; // Переписать когда подключу firebase
+  const time = `${now.getHours()}:${now.getMinutes()}`;
+  let messageId = `msg:${String(userData.uid).toLowerCase()}:${Date.now()}`;
+
+  const newMessage = {
+    _id: messageId,
+    senderID: user.id,
+    avatar: user.avatar,
+    type: 'gif',
+    media: gifURL,
+    status: 'delivered',
+    date: now.toISOString(),
+    time: time,
+  }
+
+  chatData[props.activeChat.index].messages.push(
+      {avatar: user.avatar,
+        title: "Me",
+        media: newMessage.media,
+        status: 'pending',
+        mediaType: newMessage.type,
+        text: newMessage.text,
+        time: time});
+};
 
 const onFileSelected = async (event) => {
   let file = event.target.files[0];
@@ -243,7 +273,7 @@ watch(() => props.activeChat?.index, async (newChatId) => {
     const lastMsg = changes[changes.length - 1];
     console.log(lastMsg);
     if (lastMsg.type === 'message' || lastMsg.type === 'message-media') {
-      await updateLastMessageMetadata(localDB, lastMsg);
+      await updateLastMessageMetadata(remoteDB, lastMsg); // ТРЕВОГА!
     }
   })
 

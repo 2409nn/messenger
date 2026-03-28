@@ -14,7 +14,7 @@ const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64')
 const app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Адрес твоего Vue (уточни порт!)
+    origin: 'http://localhost:5173', // адрес vue страницы
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -255,13 +255,6 @@ app.post('/send-message', async (req, res) => {
         console.error('Не удалось записать сообщение в базу: ', e)
         return res.status(500).json({ error: 'Internal Server Error' });
     }
-
-})
-
-app.post('/messages-load', async (req, res) => {
-    const { dbName, uid } = req.body;
-    const password = '12345';
-
 
 })
 

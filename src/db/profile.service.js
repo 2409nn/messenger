@@ -2,7 +2,7 @@
 
 import PouchDB from 'pouchdb';
 import { COUCHDB_URL, ADMIN_AUTH, POUCH_OPTS } from './config.js';
-import {getRemoteDB} from "@/db/auth.service.js";
+import { getRemoteDB } from "./auth.service.js";
 
 export async function putUserProfile(profile) {
     const remoteURL = `http://${ADMIN_AUTH}@localhost:5984/user_profiles`;

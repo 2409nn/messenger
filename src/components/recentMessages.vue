@@ -21,6 +21,7 @@
   const activeIndex = ref(null);
 
   const uid = userDataStore().userData.uid;
+  console.log(uid);
   const chatsData = ref({}); // хранит в себе данные о чатах
 
   const fetchProfiles = async () => {
@@ -71,15 +72,11 @@
   });
 
   const showDataLength = computed(() => {
-        try {
-          Object.keys(showData.value).length;
-        }
-        catch (error) {
-          console.warn("Не удалось загрузить чаты. showDataLength = 0");
-          return 0;
-        }
+    return showData.value ? Object.keys(showData.value).length : 0;
       }
   ) // Длина объекта с данными которые нужно отобразить
+
+  console.log(showDataLength.value);
 
 
   const emit = defineEmits(["clickChat"])
