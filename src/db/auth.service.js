@@ -19,3 +19,7 @@ export async function initLocalUserDB(uid, dbName, password) {
 export async function getDB(dbName) {
     return new PouchDB(dbName);
 }
+
+export async function getRemoteDB(url) {
+    return new PouchDB(url, { skip_setup: true });
+}

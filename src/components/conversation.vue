@@ -2,6 +2,8 @@
 import { computed, ref, reactive, nextTick, watch } from "vue";
 import { debounce } from 'lodash';
 import PouchDB from "pouchdb-browser";
+import { sendMessage } from "@/db/chat.service.js";
+import {getDB, getRemoteDB} from "@/db/auth.service.js"
 
 // --- Компоненты ---
 import emptyState from "@/components/emptyState.vue";
@@ -18,6 +20,7 @@ import { userDataStore } from "@/stores/userData.js";
 // --- Изображения ---
 import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg';
 import profile_default from '@/assets/imgs/avatars/profile_default.png';
+import {COUCHDB_URL} from "@/db/config.js";
 
 const props = defineProps({
   activeChat: { type: Object, default: () => ({}) },
@@ -47,31 +50,23 @@ const selectedMediaFile = ref(null);
 
 let currentSync = null;
 
-// --- Инициализация локальной базы данных с удаленной ---
-
-const localDB = new PouchDB('my_local_chat');
-
-// Мы создаем подключение к Express, а не к CouchDB напрямую
-const remoteDB = new PouchDB('http://localhost:5005/sync/chat_id_123', {
-  skip_setup: true,
-  fetch: (url, opts) => {
-    // В будущем сюда вставишь JWT токен
-    // opts.headers.set('Authorization', `Bearer ${token}`);
-    return PouchDB.fetch(url, opts);
-  }
-});
-
-// Запускаем магию синхронизации
-localDB.sync(remoteDB, {
-  live: true,
-  retry: true,
-  checkpoint: false,
-});
-
 // --- Логика работы с сообщениями ---
 
-const debouncedLoad = debounce(async (chatId, db) => {
-  await loadMessagesFromDB(chatId, db);
+const loadMessagesFromDB = async (db) => {
+  try {
+    const result = await db.query('chat_logic/by_time', {
+      include_docs: true,
+    });
+    console.log(props.activeChat.index)
+    chatDataLocal[props.activeChat.index] = result.rows.map(row => row.doc);
+
+  } catch (e) {
+    console.error("ошибка в loadMessagesFromDB: ", e);
+  }
+}
+
+const debouncedLoad = debounce(async (db) => {
+  await loadMessagesFromDB(db);
 }, 150);
 
 const currentMessages = computed(() => {
@@ -119,11 +114,12 @@ const handleMediaSend = async (payload) => {
   };
 
   await sendMessage(dbName, userData.uid, newMessage);
-  const db = await getDB(dbName);
-  await loadMessagesFromDB(chatId, db);
+  const db = await getRemoteDB(`${COUCHDB_URL}/${dbName}`);
+  await loadMessagesFromDB(db);
 };
 
 const onSubmitClick = async () => {
+  // ---- валидация ----
   if (!typedText.value.trim()) return;
 
   const chatId = props.activeChat.index;
@@ -131,7 +127,16 @@ const onSubmitClick = async () => {
   const now = new Date();
 
   try {
-    const user = await getProfileById(userData.uid);
+    let profileRes = await fetch(`http://localhost:5005/profile?uid=${userData.uid}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }); // получаем данные отправителя
+
+    let user = await profileRes.json();
+    user = user.profile;
+
     const newMessage = {
       _id: `msg:${userData.uid}:${Date.now()}`,
       senderID: user.id,
@@ -146,9 +151,20 @@ const onSubmitClick = async () => {
       chat: chatId
     };
 
-    await sendMessage(dbName, userData.uid, newMessage);
+    await fetch('http://localhost:5005/send-message', {
+      method: 'POST',
+      body: JSON.stringify({
+        dbName: dbName,
+        uid: userData.uid,
+        newMessage: newMessage,
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }); // сохраняем сообщение в базу
+
     const db = await getDB(dbName);
-    await loadMessagesFromDB(chatId, db);
+    await loadMessagesFromDB(db);
 
     typedText.value = '';
   } catch (err) {
@@ -183,11 +199,29 @@ watch(() => props.activeChat?.index, async (newChatId) => {
   if (currentSync) currentSync.cancel();
 
   const dbName = newChatId.toLowerCase();
-  // const { localDB, syncProcessor } = await syncToChatDB(dbName, userData.uid);
-  // currentSync = syncProcessor;
+  const localDB = new PouchDB(`local_db_${dbName}`);
+
+// Мы создаем подключение к Express, а не к CouchDB напрямую
+  const remoteDB = new PouchDB(`http://localhost:5005/sync/${dbName}`, {
+    skip_setup: true,
+    // Убираем кастомный fetch, если он не делает ничего полезного,
+    // чтобы не мешать стандартному поведению PouchDB через прокси.
+    fetch: (url, opts) => {
+      // в будущем сюда вставить JWT
+      return PouchDB.fetch(url, opts);
+    }
+  });
+
+// Запускаем магию синхронизации
+  currentSync = localDB.sync(remoteDB, {
+    live: true,
+    retry: true,
+    checkpoint: false,
+  });
+
 
   // Первичная загрузка
-  // await loadMessagesFromDB(newChatId, localDB);
+  // await loadMessagesFromDB(localDB);
   await scrollToBottom(false);
 
   // Слушатель изменений

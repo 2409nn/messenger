@@ -8,23 +8,11 @@ const { initLocalUserDB, getDB } = require('./db/auth.service.js');
 const { COUCHDB_URL, ADMIN_AUTH, API_SERVER } = require('./db/config.js');
 const { putUserProfile, getProfileById, getUserProfile, updateUserProfile } = require('./db/profile.service.js');
 const {loadUserChats} = require("./db/chat.service.js");
+const {sendMessage} = require("./db/chat.service.js");
 
-// redis подключить к следующему обновлению
-// const redis = require('redis');
-//
-// // 1. Создаем клиент Redis
-// const client = redis.createClient({
-//     url: 'redis://localhost:6996' // Замените на ваш конфиг, если Redis в облаке
-// });
-//
-// client.on('error', err => console.log('Redis Error', err));
-
-// Коннектимся к базе при старте
-// (async () => {
-//     await client.connect();
-// })();
-
+const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64');
 const app = express();
+
 app.use(cors({
     origin: 'http://localhost:5173', // Адрес твоего Vue (уточни порт!)
     methods: ['GET', 'POST', 'OPTIONS'],
@@ -33,33 +21,30 @@ app.use(cors({
 app.use(express.json()); // чтобы сервер мог понимать json в теле запроса
 
 app.use('/sync/:dbName', createProxyMiddleware({
-    // Куда на самом деле перенаправлять запрос
-    target: 'http://localhost:5984',
-
-    // Подменять заголовок Origin (важно для обхода некоторых проверок безопасности)
+    target: 'http://127.0.0.1:5984', // Используй IP вместо localhost
     changeOrigin: true,
-
-    // 2. Переписываем путь.
-    // Клиент стучится в: /sync/chat_123
-    // Прокси превращает это в: /chat_123 (как того ждет CouchDB)
-    pathRewrite: (path, req) => {
-        return `/${req.params.dbName}`;
-    },
-
+    pathRewrite: { '^/sync': '' },
     onProxyReq: (proxyReq, req, res) => {
-        const auth = Buffer.from('admin:12345').toString('base64');
-        // Удаляем старый заголовок, если он был, и ставим новый
+        console.log(`[PROXY] Запрос: ${req.method} к базе: ${req.params.dbName}`);
+        const auth = 'Basic ' + Buffer.from('admin:12345').toString('base64');
+
+        // ВАЖНО: Удаляем ВСЁ, что прислал браузер (куки и старую авторизацию)
         proxyReq.removeHeader('Authorization');
-        proxyReq.setHeader('Authorization', `Basic ${auth}`);
+        proxyReq.removeHeader('cookie');
 
-        console.log(`[Proxy] Авторизую запрос к ${req.params.dbName} как админ`);
+        // Ставим заголовок от админа
+        proxyReq.setHeader('Authorization', auth);
+
+
     },
-
-    // 4. Поддержка WebSocket/Long Polling (нужно для live: true)
-    ws: true
+    onProxyRes: (proxyRes) => {
+        // Убираем заголовки, которые заставляют браузер сохранять сессию CouchDB
+        delete proxyRes.headers['set-cookie'];
+    }
 }));
 
-// Эндпоинты
+
+// ---- Эндпоинты ----
 
 app.post('/auth-sync', async (req, res) => {
     try {
@@ -239,6 +224,45 @@ app.post('/chats-load', async (req, res) => {
 
 })
 
+app.get('/profile', async (req, res) => {
+
+    if (!req.query.uid) {
+        console.error("Не указан uid для запроса на /profile");
+        return;
+    }
+    try {
+        const uid = req.query.uid;
+        const profile = await getProfileById(uid);
+
+        return res.status(200).json({
+            status: "success",
+            profile: profile,
+        })
+    }
+    catch (error) {
+        console.error("Не удалось получить профиль пользователя: ", error);
+    }
+});
+
+app.post('/send-message', async (req, res) => {
+    const { dbName, uid, newMessage } = req.body;
+    try {
+        await sendMessage(dbName, uid, newMessage);
+        return res.sendStatus(200);
+    }
+    catch (e) {
+        console.error('Не удалось записать сообщение в базу: ', e)
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+})
+
+app.post('/messages-load', async (req, res) => {
+    const { dbName, uid } = req.body;
+    const password = '12345';
+
+
+})
 
 const PORT = 5005;
 app.listen(PORT, () => {
