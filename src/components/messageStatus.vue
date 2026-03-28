@@ -1,7 +1,7 @@
 <script setup>
   const props = defineProps({
     status: {
-      required: true,
+      default: 'pending',
       type: String,
     }
   })

@@ -7,7 +7,9 @@
   import { userDataStore } from '@/stores/userData.js'
   import { API_SERVER } from '@/db/config.js'
   import {useRoamingData} from "@/stores/roaming.js";
+  import router from "@/router/index.js";
   // import {getProfileById, updateUserProfile} from '@/db/profile.service.js'
+  import { processImageBeforeUpload } from "@/workers/compress.js"
 
   const settings = useSettingsStore().settings; // доступ к localStorage через Pinia
   const userData = userDataStore().userData; // доступ к пользовательским данным
@@ -83,10 +85,14 @@
     });
   }
 
-  const onMediaLoad = (event) => {
+  const onMediaLoad = async (event) => {
     const file = event.target.files[0];
     if (file.type.startsWith('image/')) {
-      userData.avatar = URL.createObjectURL(file);
+      const preparedFile = await processImageBeforeUpload(file);
+      console.log(preparedFile);
+      // userData.avatar = URL.createObjectURL(file);
+      await updateUserData(preparedFile);
+      userData.avatar = preparedFile;
     }
   }
 
@@ -106,11 +112,46 @@
     }
   }
 
-  onMounted(() => {
+  const handleLogOut = (event) => {
+    userDataStore().clearUserData();
+    router.push('/reg');
+  }
+
+  const loadProfile = async () => {
+    const response = await fetch(`${API_SERVER}/profile?uid=${userData.uid}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    const result = await response.json();
+    const profile = result.profile;
+
+    // сохранение в pinia
+    userData.avatar = profile.avatar || profile_default;
+    userData.username = profile.username || '';
+    userData.bio = profile.bio || '';
+    userData.firstname = profile.firstname;
+    userData.lastname = profile.lastname || '';
+
+    return profile;
+  }
+
+  onMounted(async () => {
+
     if (settings.autoSwitchTheme) {
       autoSwitchTheme();
     }
-  })
+
+    await loadProfile();
+    avatar.value = userData.avatar; // только URL
+    userName.value = userData.username;
+    firstName.value = userData.firstname;
+    lastName.value = userData.lastname;
+    bio.value = userData.bio;
+  });
+
 
 </script>
 
@@ -255,7 +296,7 @@
           {{ supportContacts.supportEmail }}
         </u></p>
     </div>
-    <router-link to="/reg" class="accountSettings__logOut-btn logOut-btn">Log out</router-link>
+    <button @click="handleLogOut" class="accountSettings__logOut-btn logOut-btn">Log out</button>
   </div>
 </template>
 

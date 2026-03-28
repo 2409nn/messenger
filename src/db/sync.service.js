@@ -14,40 +14,21 @@ export async function syncToChatDB(chatId, uid) {
     return { localDB, syncProcessor };
 }
 
-export async function updateLastMessageMetadata(db, message) {
-    const metadataId = "last_message_metadata";
-    let success = false;
+export async function updateLastMessageMetadata(chatDB, message) {
+    const lastMessage = await chatDB.get('last_message_metadata');
+    lastMessage.text = message.text;
+    lastMessage.time = message.time;
+    lastMessage.type = message.type;
 
-    while (!success) {
-        try {
-            let metadata;
-            try {
-                metadata = await db.get(metadataId);
-            } catch (err) {
-                if (err.status === 404) {
-                    metadata = { _id: metadataId, type: 'metadata' };
-                } else throw err;
-            }
+    try {
+        await chatDB.put(lastMessage);
 
-            if (metadata.lastTime === message.time) {
-                success = true; break;
-            }
-
-            metadata.lastText = message.text;
-            metadata.lastSender = message.firstname || "Me";
-            metadata.lastTime = message.time;
-            metadata.timestamp = Date.now();
-
-            await db.put(metadata);
-            success = true;
-        } catch (err) {
-            if (err.status === 409) continue;
-            else { console.error("Ошибка метаданных:", err); break; }
-        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
-export async function setupChatListeners(allChatDBs, chats, interlocatorsData, uid) {
+export async function setupChatListeners(allChatDBs, chats, chatsData, uid) {
     chats.forEach(chat => {
         const dbName = chat._id.toLowerCase();
         if (!allChatDBs[dbName]) {
@@ -61,11 +42,11 @@ export async function setupChatListeners(allChatDBs, chats, interlocatorsData, u
                 include_docs: true
             }).on('change', (change) => {
                 const newMetadata = change.doc;
-                if (interlocatorsData[chat._id]) {
-                    interlocatorsData[chat._id].lastMessage = {
-                        lastText: newMetadata.lastText,
-                        lastTime: newMetadata.lastTime,
-                        lastSender: newMetadata.lastSender,
+                if (chatsData[chat._id]) {
+                    chatsData[chat._id].lastMessage = {
+                        text: newMetadata.text,
+                        time: newMetadata.time,
+                        sender: newMetadata.sender,
                     };
                 }
             });

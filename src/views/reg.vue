@@ -226,16 +226,16 @@
             <input v-model="password" type="password" class="registration-form__input" placeholder="Type password...">
           </div>
 
-          <div v-if="!isLogin" class="registration-form__captcha captcha">
-            <label class="captcha__container">
-              <input type="checkbox" class="captcha__checkbox">
-              <span class="captcha__checkmark"></span>
-              <span class="captcha__text">I'm not a robot</span>
-            </label>
-            <div class="captcha__logo">
-              <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA">
-            </div>
-          </div>
+<!--          <div v-if="!isLogin" class="registration-form__captcha captcha">-->
+<!--            <label class="captcha__container">-->
+<!--              <input type="checkbox" class="captcha__checkbox">-->
+<!--              <span class="captcha__checkmark"></span>-->
+<!--              <span class="captcha__text">I'm not a robot</span>-->
+<!--            </label>-->
+<!--            <div class="captcha__logo">-->
+<!--              <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA">-->
+<!--            </div>-->
+<!--          </div>-->
 
           <div class="registration-form__footer">
             <button class="registration-form__link" @click="toggleForm">
@@ -246,7 +246,7 @@
         </form>
       </div>
 
-      <verCode v-if="isVerifyEnabled" @correct-code="onCorrectCode" />
+      <verCode v-if="isVerifyEnabled" @correct-code="onCorrectCode" :is-started="isVerifyEnabled" />
 
     </section>
 

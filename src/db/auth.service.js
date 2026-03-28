@@ -16,10 +16,22 @@ export async function initLocalUserDB(uid, dbName, password) {
     return localDB;
 }
 
-export async function getDB(dbName) {
+export function getDB(dbName) {
     return new PouchDB(dbName);
 }
 
-export async function getRemoteDB(url) {
-    return new PouchDB(url, { skip_setup: true });
+export async function getRemoteDB(dbName, uid) {
+    // Стучимся на НАШ сервер, а не на CouchDB
+    const url = `http://localhost:5005/sync/${dbName}`;
+
+    return new PouchDB(url, {
+        skip_setup: true,
+        fetch: (url, opts) => {
+            opts.headers = new Headers(opts.headers);
+            // Передаем UID (или в будущем JWT токен)
+            // Пароль знает ТОЛЬКО сервер в Express
+            opts.headers.set('x-user-Id', uid);
+            return PouchDB.fetch(url, opts);
+        }
+    });
 }

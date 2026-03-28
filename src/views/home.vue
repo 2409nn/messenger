@@ -12,9 +12,11 @@ import alert from "@/components/alert.vue"
 import createWindow from "@/components/createWindow.vue"
 import preloader from "@/components/preloader.vue"
 
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import DropMenu from "@/components/dropMenu.vue"
 import { onClickOutside } from "@vueuse/core"
+import router from "@/router/index.js";
+import {userDataStore} from "@/stores/userData.js";
 
 // Референсы для всплывающих окон
 const isSettingsOpen = ref(false);
@@ -188,6 +190,12 @@ function handleUserSelected (payload) {
 
 }
 
+// Слежка за uid. Гнать на регистрацию если не зареган пользователь
+const uid = userDataStore().userData.uid;
+if (!uid) {
+  userDataStore().clearUserData();
+  router.push('/reg');
+}
 
 </script>
 
@@ -195,7 +203,7 @@ function handleUserSelected (payload) {
 
   <confirm :text="confirmText" v-model:is-active="confirmIsActive" :yes-case="onConfirmYes" :no-case="onConfirmNo" />
 
-  <alert :is-active="alertIsActive" v-model:is-active="alertIsActive" :text="alertText" :on-ok="() => {console.log('bombardiro crocodilo')}"></alert>
+  <alert :is-active="alertIsActive" v-model:is-active="alertIsActive" :text="alertText" :on-ok="() => {}"></alert>
 
 <!--  <preloader />-->
 

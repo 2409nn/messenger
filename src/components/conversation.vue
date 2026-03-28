@@ -4,6 +4,7 @@ import { debounce } from 'lodash';
 import PouchDB from "pouchdb-browser";
 import { sendMessage } from "@/db/chat.service.js";
 import {getDB, getRemoteDB} from "@/db/auth.service.js"
+import {updateLastMessageMetadata} from "@/db/sync.service.js"
 
 // --- Компоненты ---
 import emptyState from "@/components/emptyState.vue";
@@ -57,8 +58,9 @@ const loadMessagesFromDB = async (db) => {
     const result = await db.query('chat_logic/by_time', {
       include_docs: true,
     });
-    console.log(props.activeChat.index)
+    console.log(result.rows)
     chatDataLocal[props.activeChat.index] = result.rows.map(row => row.doc);
+    console.log(chatDataLocal[props.activeChat.index]);
 
   } catch (e) {
     console.error("ошибка в loadMessagesFromDB: ", e);
@@ -71,7 +73,7 @@ const debouncedLoad = debounce(async (db) => {
 
 const currentMessages = computed(() => {
   return chatDataLocal[props.activeChat?.index] || [];
-});
+})
 
 // --- Обработка событий ---
 
@@ -114,8 +116,11 @@ const handleMediaSend = async (payload) => {
   };
 
   await sendMessage(dbName, userData.uid, newMessage);
-  const db = await getRemoteDB(`${COUCHDB_URL}/${dbName}`);
-  await loadMessagesFromDB(db);
+
+  console.log(`${COUCHDB_URL}/${dbName.toLowerCase()}`);
+
+  // const db = await getRemoteDB(`${COUCHDB_URL}/${dbName.toLowerCase()}`);
+  // await loadMessagesFromDB(db);
 };
 
 const onSubmitClick = async () => {
@@ -163,9 +168,6 @@ const onSubmitClick = async () => {
       }
     }); // сохраняем сообщение в базу
 
-    const db = await getDB(dbName);
-    await loadMessagesFromDB(db);
-
     typedText.value = '';
   } catch (err) {
     console.error("Ошибка при отправке:", err);
@@ -204,25 +206,52 @@ watch(() => props.activeChat?.index, async (newChatId) => {
 // Мы создаем подключение к Express, а не к CouchDB напрямую
   const remoteDB = new PouchDB(`http://localhost:5005/sync/${dbName}`, {
     skip_setup: true,
-    // Убираем кастомный fetch, если он не делает ничего полезного,
-    // чтобы не мешать стандартному поведению PouchDB через прокси.
+
     fetch: (url, opts) => {
+      opts.headers = opts.headers || new Headers();
+      opts.headers.set('x-user-Id', userData.uid);
+
       // в будущем сюда вставить JWT
+
       return PouchDB.fetch(url, opts);
     }
   });
 
-// Запускаем магию синхронизации
+// Запускаем синхронизацию
   currentSync = localDB.sync(remoteDB, {
     live: true,
     retry: true,
     checkpoint: false,
   });
 
+  // Первичная загрузка данных
+  const db = await getRemoteDB(dbName.toLowerCase(), userData.uid);
+  await loadMessagesFromDB(db);
+
+  await scrollToBottom(false);
+
+  currentSync.on('change', async (info) => {
+    await loadMessagesFromDB(db);
+    const changes = info.change.docs;
+
+    const isOnlyMeta = changes.every(doc => doc._id === "last_message_metadata");
+      if (isOnlyMeta) { return; }
+
+    // await debouncedLoad(db);
+
+    // Обновление метаданных для списка чатов
+    const lastMsg = changes[changes.length - 1];
+    console.log(lastMsg);
+    if (lastMsg.type === 'message' || lastMsg.type === 'message-media') {
+      await updateLastMessageMetadata(localDB, lastMsg);
+    }
+  })
 
   // Первичная загрузка
   // await loadMessagesFromDB(localDB);
-  await scrollToBottom(false);
+
+
+    });
 
   // Слушатель изменений
   // syncProcessor.on('change', async (info) => {
@@ -238,7 +267,6 @@ watch(() => props.activeChat?.index, async (newChatId) => {
   //     await updateLastMessageMetadata(localDB, lastMsg);
   //   }
   // });
-});
 
 // Авто-скролл при новых сообщениях
 watch(() => currentMessages.value.length, (newVal, oldVal) => {
@@ -260,7 +288,7 @@ watch(() => currentMessages.value.length, (newVal, oldVal) => {
     <div class="conv__heading heading" v-if="isChatOpen">
       <div class="conv__userinfo">
         <div class="conv__userinfo-avatar">
-          <img :src="activeChat.avatar" alt="avatar" class="conv__userinfo-image">
+          <img :src="activeChat.avatar || profile_default" alt="avatar" class="conv__userinfo-image">
         </div>
         <div class="conv__userinfo-online online-tag"></div>
         <div class="conv__userinfo-title">

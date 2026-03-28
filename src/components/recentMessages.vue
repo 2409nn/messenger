@@ -1,9 +1,8 @@
 <script setup>
 
-  import { ref, watch, computed, reactive, onMounted } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { API_SERVER } from "@/db/config.js";
   import { userDataStore } from "@/stores/userData.js";
-  import { loadUserChats } from "@/db/chat.service.js"
   import EmptyState from "@/components/emptyState.vue";
   import profile_default from "@/assets/imgs/avatars/profile_default.png"
   import counter from "@/components/counter.vue";
@@ -19,18 +18,12 @@
     }
   })
 
-
-
   const activeIndex = ref(null);
 
   const uid = userDataStore().userData.uid;
   const chatsData = ref({}); // хранит в себе данные о чатах
 
-  const allChatDBs = {}; // Объект для хранения инстансов БД, чтобы не плодить лишние
-
   const fetchProfiles = async () => {
-    // Ждем, пока загрузятся сами чаты (у тебя там await loadChats)
-    // Предположим, chats — это массив после loadChats
 
     const response = await fetch(`${API_SERVER}/chats-load`, {
       method: "POST",
@@ -43,24 +36,16 @@
     });
 
     if (!response.ok) {
-      console.error('Не удалось получить чаты');
-      return;
+      return {};
+    }
+    else {
+      return await response.json();
     }
 
-    const chatsData = await response.json();
-
-    return chatsData;
 
   };
 
   // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
-  // interlocatorsData[chat._id] = {
-  //   id: interlocatorId,
-  //   firstname: chatInfo.firstname || 'Без имени',
-  //   lastname: chatInfo.lastname || '',
-  //   avatar: chatInfo.avatar || profile_default,
-  //   lastMessage: lastMessage || '',
-  // };
 
 
 
@@ -71,7 +56,9 @@
     });
 
     // Запускаем "живое" обновление
-    // await setupChatListeners(allChatDBs, chats, interlocatorsData, uid);
+
+    const allChatDBs = {}; // Объект для хранения инстансов БД, чтобы не плодить лишние
+
   });
 
 
@@ -83,7 +70,17 @@
     return {};
   });
 
-  const showDataLength = computed(() => Object.keys(showData.value).length); // Длина объекта с данными которые нужно отобразить
+  const showDataLength = computed(() => {
+        try {
+          Object.keys(showData.value).length;
+        }
+        catch (error) {
+          console.warn("Не удалось загрузить чаты. showDataLength = 0");
+          return 0;
+        }
+      }
+  ) // Длина объекта с данными которые нужно отобразить
+
 
   const emit = defineEmits(["clickChat"])
 

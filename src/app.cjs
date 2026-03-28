@@ -18,31 +18,33 @@ app.use(cors({
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json()); // чтобы сервер мог понимать json в теле запроса
 
-app.use('/sync/:dbName', createProxyMiddleware({
-    target: 'http://127.0.0.1:5984', // Используй IP вместо localhost
+app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
+    target: 'http://127.0.0.1:5984',
     changeOrigin: true,
     pathRewrite: { '^/sync': '' },
-    onProxyReq: (proxyReq, req, res) => {
-        console.log(`[PROXY] Запрос: ${req.method} к базе: ${req.params.dbName}`);
-        const auth = 'Basic ' + Buffer.from('admin:12345').toString('base64');
+    onProxyReq: (proxyReq, req) => {
+        // Достаем UID (проверь, чтобы во Vue было такое же имя!)
+        const uid = req.headers['x-user-id'] || req.headers['x-auth-id'];
 
-        // ВАЖНО: Удаляем ВСЁ, что прислал браузер (куки и старую авторизацию)
+        if (!uid && req.params.dbName) {
+            console.error("[PROXY] КРИТИЧЕСКАЯ ОШИБКА: UID не пришел в заголовках!");
+        }
+
+        const userPassword = '12345';
+        // Обязательно .toLowerCase(), CouchDB не любит заглавные в именах юзеров
+        const auth = 'Basic ' + Buffer.from(`${uid}:${userPassword}`).toString('base64');
+
         proxyReq.removeHeader('Authorization');
         proxyReq.removeHeader('cookie');
 
-        // Ставим заголовок от админа
         proxyReq.setHeader('Authorization', auth);
 
-
-    },
-    onProxyRes: (proxyRes) => {
-        // Убираем заголовки, которые заставляют браузер сохранять сессию CouchDB
-        delete proxyRes.headers['set-cookie'];
+        // console.log(`[PROXY] ${req.method} | User: ${uid} | Base: ${req.params.dbName || 'ROOT'}`);
     }
 }));
 
+app.use(express.json()); // чтобы сервер мог понимать json в теле запроса
 
 // ---- Эндпоинты ----
 
@@ -94,7 +96,7 @@ app.post('/login', async (req, res) => {
 
 app.post('/chat-create', async (req, res) => {
     try {
-        console.log("--- Запрос на создание чата получен ---");
+        // console.log("--- Запрос на создание чата получен ---");
 
         // 1. Достаем чистый токен
         const authHeader = req.headers.authorization;
@@ -106,7 +108,7 @@ app.post('/chat-create', async (req, res) => {
         }
 
         const { id, uids } = req.body;
-        console.log(`Создаю чат ID: ${id} для пользователей: ${uids}`);
+        // console.log(`Создаю чат ID: ${id} для пользователей: ${uids}`);
 
         // 2. Ждем выполнения функции создания БД
         await initChatDB(token, id, uids);
@@ -135,13 +137,13 @@ app.put('/update-profile', async (req, res) => {
         userProfile.lastname = userData.lastname;
         userProfile.username = userData.username;
         userProfile.bio = userData.bio;
-        // userProfile.avatar = userData.avatar; // доделать сохранение аватара
+        userProfile.avatar = userData.avatar;
 
         await updateUserProfile(userProfile);
 
         res.status(200).json({
             status: "success",
-            message: "Database created",
+            message: "Профиль обновлен",
         });
 
     } catch (error) {
@@ -184,7 +186,6 @@ app.get('/find-user', async (req, res) => {
 app.post('/chats-load', async (req, res) => {
 
     const uid = req.body.uid;
-    console.log(uid);
     let chats = await loadUserChats(uid);
     chats = chats.rows;
 

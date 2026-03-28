@@ -6,6 +6,13 @@ import { useRouter } from "vue-router"
 import { sendCodeToEmail } from "@/workers/sendCode.js";
 import { userDataStore } from "@/stores/userData.js"
 
+const props = defineProps({
+  isStarted: {
+    type: Boolean,
+    default: false
+  }
+});
+
 const emit = defineEmits(["correctCode"]);
 
 const codeLength = 4;
@@ -14,9 +21,6 @@ const inputs = ref([]);
 const codeBorderClass = ref(null);
 const router = useRouter();
 const userData = userDataStore().userData;
-
-const createdTimeDiff = ref((Date.now() - new Date(Number(localStorage.getItem("codeCreatedAt")))) / 1000); // разница в секундах с момента создания кода
-const timerSeconds = Math.floor(Math.max(120 - createdTimeDiff.value, 0));
 
 const handleInput = (index, event) => {
   const val = event.data;
@@ -79,6 +83,17 @@ watch(code, () => {
   }
 })
 
+const endTime = ref(0);
+
+if (props.isStarted) {
+  endTime.value = Date.now() + 1000 * 60;
+}
+
+async function resendCode() {
+  endTime.value = Date.now() + 1000 * 60;
+  await sendCodeToEmail(userData.email, userData.uid)
+}
+
 </script>
 
 <template>
@@ -104,7 +119,7 @@ watch(code, () => {
         </div>
       </div>
 
-      <Timer :seconds="timerSeconds" @resend-clicked="() => {sendCodeToEmail(userData.email, userData.uid)}" />
+      <Timer :end-time="endTime" @resend-clicked="resendCode" />
     </div>
 
   </section>

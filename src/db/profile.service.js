@@ -2,6 +2,7 @@
 
 import PouchDB from 'pouchdb';
 import { COUCHDB_URL, ADMIN_AUTH, POUCH_OPTS } from './config.js';
+import {getRemoteDB} from "@/db/auth.service.js";
 
 export async function putUserProfile(profile) {
     const remoteURL = `http://${ADMIN_AUTH}@localhost:5984/user_profiles`;
@@ -27,6 +28,22 @@ export async function getProfileById(uid) {
 
 export async function updateUserProfile(uid, updatedDoc) {
     const password = '12345';
-    const remoteURL = `http://${uid}:${password}@localhost:5984/user_profiles`;
-    await new PouchDB(remoteURL, POUCH_OPTS).put(updatedDoc);
+    const remoteURL = `http://@localhost:5984/user_profiles`;
+    const remoteDB = getRemoteDB(remoteURL);
+    const db = PouchDB(remoteURL, POUCH_OPTS)
+    const { avatar, ...docToSave } = updatedDoc;
+
+    const response = await db.put(docToSave);
+
+    if (avatar) {
+        await db.putAttachment(
+            updatedDoc._id,
+            'avatar.jpg',
+            response._rev,
+            avatar,
+            'image/jpeg'
+        );
+    }
+
+    await db.put(updatedDoc);
 }

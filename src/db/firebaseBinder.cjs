@@ -116,10 +116,10 @@ async function initChatDB(idToken, dbName, uids) {
         const chatDesignDoc = {
             _id: '_design/chat_logic',
             views: {
-                by_timestamp: {
+                by_time: {
                     map: function (doc) {
                         if (doc.type === 'message') {
-                            emit(doc.timestamp, doc);
+                            emit(doc.time, doc);
                         }
                     }.toString() // Nano требует функции в виде строк
                 },
