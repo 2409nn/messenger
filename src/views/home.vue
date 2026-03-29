@@ -191,11 +191,11 @@ function handleUserSelected (payload) {
 }
 
 // Слежка за uid. Гнать на регистрацию если не зареган пользователь
-const uid = userDataStore().userData.uid;
-if (!uid) {
-  userDataStore().clearUserData();
-  router.push('/reg');
-}
+// const uid = userDataStore().userData.uid;
+// if (!uid) {
+//   userDataStore().clearUserData();
+//   router.push('/reg');
+// }
 
 </script>
 

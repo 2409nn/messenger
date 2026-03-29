@@ -59,9 +59,7 @@ const loadMessagesFromDB = async (db) => {
     const result = await db.query('chat_logic/by_time', {
       include_docs: true,
     });
-    console.log(result.rows)
     chatDataLocal[props.activeChat.index] = result.rows.map(row => row.doc);
-    console.log(chatDataLocal[props.activeChat.index]);
 
   } catch (e) {
     console.error("ошибка в loadMessagesFromDB: ", e);
@@ -146,8 +144,6 @@ const handleMediaSend = async (payload) => {
   };
 
   await sendMessage(dbName, userData.uid, newMessage);
-
-  console.log(`${COUCHDB_URL}/${dbName.toLowerCase()}`);
 
   // const db = await getRemoteDB(`${COUCHDB_URL}/${dbName.toLowerCase()}`);
   // await loadMessagesFromDB(db);
@@ -261,13 +257,12 @@ watch(() => props.activeChat?.index, async (newChatId) => {
   await scrollToBottom(false);
 
   currentSync.on('change', async (info) => {
-    await loadMessagesFromDB(db);
     const changes = info.change.docs;
 
     const isOnlyMeta = changes.every(doc => doc._id === "last_message_metadata");
       if (isOnlyMeta) { return; }
 
-    // await debouncedLoad(db);
+    await debouncedLoad(db);
 
     // Обновление метаданных для списка чатов
     const lastMsg = changes[changes.length - 1];

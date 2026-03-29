@@ -10,6 +10,7 @@
   import router from "@/router/index.js";
   // import {getProfileById, updateUserProfile} from '@/db/profile.service.js'
   import { processImageBeforeUpload } from "@/workers/compress.js"
+  import {clearUserDatabases} from "@/db/auth.service.js";
 
   const settings = useSettingsStore().settings; // доступ к localStorage через Pinia
   const userData = userDataStore().userData; // доступ к пользовательским данным
@@ -112,8 +113,9 @@
     }
   }
 
-  const handleLogOut = (event) => {
+  const handleLogOut = async () => {
     userDataStore().clearUserData();
+    await clearUserDatabases(); // очистка indexedDB от pouch_local_db
     router.push('/reg');
   }
 
@@ -139,6 +141,10 @@
   }
 
   onMounted(async () => {
+
+    if (!userData.uid) {
+      router.push('/reg');
+    }
 
     if (settings.autoSwitchTheme) {
       autoSwitchTheme();

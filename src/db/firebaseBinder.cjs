@@ -102,6 +102,8 @@ async function initChatDB(idToken, dbName, uids) {
     const uid = userData.uid;
     const password = "12345"; // засекретить пароль
 
+    console.log(dbName);
+
     try {
         // создание базы данных для чата
         await nano.db.create(dbName);
@@ -118,21 +120,21 @@ async function initChatDB(idToken, dbName, uids) {
             views: {
                 by_time: {
                     map: function (doc) {
-                        if (doc.type === 'message') {
+                        if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.time, doc);
                         }
                     }.toString() // Nano требует функции в виде строк
                 },
                 by_sender: {
                     map: function (doc) {
-                        if (doc.type === 'message') {
+                        if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.senderId, doc);
                         }
                     }
                 },
                 by_type: {
                     map: function (doc) {
-                        if (doc.type === 'message') {
+                        if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.type, doc);
                         }
                     }

@@ -46,39 +46,25 @@ export async function sendMessage(dbName, uid, message) {
 }
 
 export async function loadUserChats(uid) {
-    const password = '12345'; // засекретить пароль
+    const adminLogin = 'admin'; // Используем админа
+    const adminPass = '12345';  // Пароль из твоего local.ini
     const dbName = `db_${String(uid).toLowerCase()}`;
 
-    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
+    console.log(dbName);
+
+    // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы
+    const remoteURL = `http://${adminLogin}:${adminPass}@localhost:5984/${dbName}`;
 
     const db = new PouchDB(remoteURL, { skip_setup: true });
 
-    return await db.allDocs({include_docs: true, startkey: 'chat_', endkey: 'chat_\uffff'});
-
-
-    // Функция для загрузки всех данных из локальной базы
-    // const updateChats = async () => {
-    //     const allDocs = await localDB.allDocs({include_docs: true, startkey: 'chat_', endkey: 'chat_\uffff'});
-    //     allDocs.rows.forEach(row => {
-    //         chats.push(row.doc); // Наполняем наш объект
-    //     });
-    //
-    // };
-
-    // Запускаем синхронизацию
-    // localDB.sync(remoteDB, {
-    //     live: true,
-    //     retry: true,
-    // })
-    //     .on('change', async (info) => {
-    //         console.log('Данные изменились, обновляем список...');
-    //         await updateChats(); // Перечитываем базу при каждом изменении
-    //     })
-    //     .on('error', (err) => {
-    //         console.error('Ошибка синхронизации:', err);
-    //     });
-
-    // Первоначальная загрузка
-    // await updateChats();
+    try {
+        return await db.allDocs({
+            include_docs: true,
+            startkey: 'chat_',
+            endkey: 'chat_\uffff'
+        });
+    } catch (error) {
+        console.error(`[LoadChats] Ошибка для юзера ${uid}:`, error.message);
+        throw error; // Чтобы Express выдал ошибку, а не пустой ответ
+    }
 }
-
