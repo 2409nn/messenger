@@ -2,9 +2,11 @@
 
   import profileDefault from "@/assets/imgs/avatars/profile_default.png"
   import { userDataStore } from "@/stores/userData.js";
+  import { useRoamingData } from "@/stores/roaming.js";
   import { getAuth } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
   import { API_SERVER } from '@/db/config.js'
   import { createChatDB } from '@/db/chat.service.js'
+  import { fetchChatsProfile } from "@/db/sync.service.js";
 
 
   const props = defineProps({
@@ -34,11 +36,18 @@
 
   const emit = defineEmits(['cardClicked'])
   const userData = userDataStore().userData;
+  const chatsData = useRoamingData().roaming.chatsData;
 
   const onCardClick = async () => {
     emit('cardClicked', {firstName: props.firstName, lastName: props.lastName, username: props.username});
 
     if (userData.uid === props.uid) { console.error('нельзя писать самому себе'); return }
+
+    await fetchChatsProfile(userData.uid).then((res) => {
+      console.log(res);
+      chatsData.value = res.chatsData;
+    });
+
 
     try {
       // проверка на то, авторизован ли пользователь, перед тем как писать кому-то

@@ -14,6 +14,7 @@
 
   const settings = useSettingsStore().settings; // доступ к localStorage через Pinia
   const userData = userDataStore().userData; // доступ к пользовательским данным
+  const roamingData = useRoamingData().roaming;
   const emit = defineEmits(['update:isPopupVisible', 'update:isDark']);
 
   const avatar = ref(userData.avatar); // только URL
@@ -115,6 +116,8 @@
 
   const handleLogOut = async () => {
     userDataStore().clearUserData();
+    useRoamingData().clearRoamingData();
+
     await clearUserDatabases(); // очистка indexedDB от pouch_local_db
     router.push('/reg');
   }

@@ -49,8 +49,11 @@ export async function clearUserDatabases() {
             indexedDB.deleteDatabase(dbInfo.name);
         }
 
+        localStorage.clear();
+
         console.log("Очистка завершена успешно");
     } catch (error) {
         console.error("Ошибка при удалении баз:", error);
     }
 }
+

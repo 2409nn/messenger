@@ -7,7 +7,14 @@ export const useRoamingData = defineStore("roaming", () => {
         chatsData: {}
     });
 
-    return { roaming };
+    function clearRoamingData() {
+        // Очищаем весь объект сразу
+        roaming.value = {
+            chatsData: {}
+        }
+    }
+
+    return { roaming, clearRoamingData };
 }, {
     persist: true
 });

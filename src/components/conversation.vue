@@ -6,7 +6,6 @@ import { sendMessage } from "@/db/chat.service.js";
 import {getDB, getRemoteDB} from "@/db/auth.service.js"
 import { updateLastMessageMetadata, fetchChatsProfile } from "@/db/sync.service.js"
 
-
 // --- Компоненты ---
 import emptyState from "@/components/emptyState.vue";
 import mediaSender from "@/components/mediaSender.vue";
@@ -23,6 +22,9 @@ import { userDataStore } from "@/stores/userData.js";
 import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg';
 import profile_default from '@/assets/imgs/avatars/profile_default.png';
 import {COUCHDB_URL} from "@/db/config.js";
+import {useRoamingData} from "@/stores/roaming.js";
+
+const chatsData = useRoamingData().roaming.chatsData;
 
 const props = defineProps({
   activeChat: { type: Object, default: () => ({}) },
@@ -194,7 +196,9 @@ const onSubmitClick = async () => {
       }
     }); // сохраняем сообщение в базу
 
-    await fetchChatsProfile(userData.uid);
+    await fetchChatsProfile(userData.uid).then((res) => {
+      chatsData.value = res.chatsData;
+    });
 
     typedText.value = '';
   } catch (err) {
@@ -268,9 +272,9 @@ watch(() => props.activeChat?.index, async (newChatId) => {
 
     // Обновление метаданных для списка чатов
     const lastMsg = changes[changes.length - 1];
-    console.log(lastMsg);
+    // console.log(lastMsg);
     if (lastMsg.type === 'message' || lastMsg.type === 'message-media') {
-      await updateLastMessageMetadata(remoteDB, lastMsg); // ТРЕВОГА!
+      await updateLastMessageMetadata(remoteDB, lastMsg);
     }
   })
 
@@ -335,7 +339,7 @@ watch(() => currentMessages.value.length, (newVal, oldVal) => {
             <path d="M15.8052 12.35L13.5 10.0192V2.98073L15.8052 0.649969C16.6151 -0.168988 18 0.411036 18 1.56921V11.4307C18 12.5889 16.6151 13.1689 15.8052 12.35Z" fill="currentColor"/>
           </svg>
         </button>
-        <button class="conv__buttons-button" style="background: none"  @click="() => {emit('burgerClicked', true)}">
+        <button class="conv__buttons-button" style="background: none"  @click="(event) => {emit('burgerClicked', event)}">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M10.5 6.1C10.5 5.21634 11.3954 4.5 12.5 4.5C13.6046 4.5 14.5 5.21634 14.5 6.1C14.5 6.98366 13.6046 7.7 12.5 7.7C11.3954 7.7 10.5 6.98366 10.5 6.1ZM10.5 12.5C10.5 11.6163 11.3954 10.9 12.5 10.9C13.6046 10.9 14.5 11.6163 14.5 12.5C14.5 13.3837 13.6046 14.1 12.5 14.1C11.3954 14.1 10.5 13.3837 10.5 12.5ZM10.5 18.9C10.5 18.0163 11.3954 17.3 12.5 17.3C13.6046 17.3 14.5 18.0163 14.5 18.9C14.5 19.7837 13.6046 20.5 12.5 20.5C11.3954 20.5 10.5 19.7837 10.5 18.9Z" fill="currentColor"/>
           </svg>

@@ -221,7 +221,7 @@ onMounted(() => {
     }
   });
 
-  console.log("chatStatusMap: ", chatStatusMap);
+  // console.log("chatStatusMap: ", chatStatusMap);
 })
 
 </script>

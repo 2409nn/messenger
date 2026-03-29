@@ -22,6 +22,7 @@ export async function createChatDB(uids, token) {
     });
 
     if (!res.ok) throw new Error('Сервер не смог создать чат');
+
     return id;
 }
 
@@ -46,8 +47,8 @@ export async function sendMessage(dbName, uid, message) {
 }
 
 export async function loadUserChats(uid) {
-    const adminLogin = 'admin'; // Используем админа
-    const adminPass = '12345';  // Пароль из твоего local.ini
+    const adminLogin = 'admin';
+    const adminPass = '12345';
     const dbName = `db_${String(uid).toLowerCase()}`;
 
     // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы

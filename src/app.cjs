@@ -9,6 +9,7 @@ const { COUCHDB_URL, ADMIN_AUTH, API_SERVER } = require('./db/config.js');
 const { putUserProfile, getProfileById, getUserProfile, updateUserProfile } = require('./db/profile.service.js');
 const {loadUserChats} = require("./db/chat.service.js");
 const {sendMessage} = require("./db/chat.service.js");
+const {fetchChatsProfile} = require("./db/sync.service.js");
 
 const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64');
 const app = express();

@@ -11,6 +11,7 @@ main {
     grid-template-columns: repeat(16, 1fr);
     height: 100vh;
     color: var(--main-text-color);
+    overflow: hidden;
 }
 
 section .heading {

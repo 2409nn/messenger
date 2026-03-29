@@ -79,34 +79,38 @@ export function subscribeToUserUpdates(uid, onNewMessage) {
         auth: { username: 'admin', password: '12345' }
     });
 
-    changesHandler = userDB.changes({
-        since: 'now', // Обязательно 'now', чтобы не спамить старьем при загрузке
+    userDB.changes({
+        since: 'now',       // Игнорировать всё, что было до этой секунды
         live: true,
         include_docs: true,
-        heartbeat: 20000
+        conflicts: false,   // Не тянуть историю конфликтов
+        attachments: false  // Не тянуть вложения
     })
         .on('change', (change) => {
-            if (change.seq === lastUpdateSeq) return;
-            lastUpdateSeq = change.seq;
+            // Если в объекте есть хоть намек на удаление – в топку
+            if (change.deleted || (change.doc && change.doc._deleted)) {
+                return;
+                if (change.seq === lastUpdateSeq) return;
+                lastUpdateSeq = change.seq;
 
-            const doc = change.doc;
+                const doc = change.doc;
 
-            // Фильтруем только метаданные чатов
-            if (doc._id.startsWith('chat_')) {
-                const chatId = doc.chatId || doc._id;
+                // Фильтруем только метаданные чатов
+                if (doc._id.startsWith('chat_')) {
+                    const chatId = doc.chatId || doc._id;
 
-                // Формируем "чистый" объект последнего сообщения
-                const lastMessage = {
-                    chatId: chatId,
-                    text: doc.lastMessage?.text || doc.text,
-                    time: doc.lastMessage?.time || doc.time,
-                    unreadCount: doc.unreadCount || 0
-                };
+                    const lastMessage = {
+                        chatId: chatId,
+                        text: doc.lastMessage?.text || doc.text,
+                        time: doc.lastMessage?.time || doc.time,
+                        unreadCount: doc.unreadCount || 0
+                    };
 
-                console.log(`[Sync] Выброс изменения для ${chatId}`);
+                    // console.log(`[Sync] Выброс изменения для ${chatId}`);
 
-                // Отдаем наверх только то, что просили
-                onNewMessage(lastMessage);
+                    // Отдаем наверх только то, что просили
+                    onNewMessage(lastMessage);
+                }
             }
         })
         .on('error', (err) => {
