@@ -42,20 +42,10 @@ export async function clearUserDatabases() {
         const dbs = await indexedDB.databases();
 
         // Фильтруем те, что начинаются на _pouch_db_
-        // (PouchDB обычно добавляет префикс _pouch_ к имени, проверь это в Application tab)
         const dbsToDelete = dbs.filter(db => db.name.includes('_pouch_local_db'));
 
         for (const dbInfo of dbsToDelete) {
             console.log(`Удаляю базу: ${dbInfo.name}`);
-
-            // Вариант 1: Через PouchDB (мягкое удаление)
-            // Имя нужно очистить от префикса _pouch_, если он есть
-            // const pouchName = dbInfo.name.replace('_pouch_', '');
-            // console.log('удаление ', pouchName);
-            // const db = new PouchDB(pouchName);
-            // await db.destroy();
-            //
-            // // Вариант 2: Прямое удаление через IndexedDB (жесткое удаление)
             indexedDB.deleteDatabase(dbInfo.name);
         }
 

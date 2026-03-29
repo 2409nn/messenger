@@ -50,8 +50,6 @@ export async function loadUserChats(uid) {
     const adminPass = '12345';  // Пароль из твоего local.ini
     const dbName = `db_${String(uid).toLowerCase()}`;
 
-    console.log(dbName);
-
     // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы
     const remoteURL = `http://${adminLogin}:${adminPass}@localhost:5984/${dbName}`;
 

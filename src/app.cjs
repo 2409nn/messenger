@@ -185,37 +185,72 @@ app.get('/find-user', async (req, res) => {
 
 app.post('/chats-load', async (req, res) => {
 
-    const uid = req.body.uid;
-    console.log(uid);
+    const uid = String(req.body.uid).toLowerCase();
     let chats = await loadUserChats(uid);
     chats = chats.rows;
 
     const chatsData = {};
 
     for (let chatRow of chats) { // используем другое имя, чтобы не путаться
+
         const chat = chatRow.doc;
-        const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
-        const interlocatorId = chat.members_id.find(id => id !== uid);
 
-        try {
-            const db = await getUserProfile();
-            const interlocatorProfile = await db.get(interlocatorId);
+        for (userId of chat.members_id) {
+            const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
+            const userPassword = '12345' // засекретить пароль
+            const userDB = await getDB(`http://admin:12345@localhost:5984/db_${uid}`);
 
-            // Используем await вместо .then(), чтобы цикл ждал ответа
-            let lastMessage = null;
+            const interlocatorId = chat.members_id.find(id => id.toLowerCase() !== uid);
+
             try {
-                lastMessage = await chatDB.get('last_message_metadata');
-            } catch (e) {
-                console.log("Метаданные не найдены для чата:", chat._id);
-            }
+                const db = await getUserProfile();
+                const interlocatorProfile = await db.get(interlocatorId);
 
-            chatsData[chat._id] = {
-                chatInfo: interlocatorProfile,
-                lastMessage: lastMessage,
-                interlocatorId: interlocatorId
-            };
-        } catch (e) {
-            console.error("Ошибка загрузки профиля:", interlocatorId, e);
+                try {
+                    // 1. Берем актуальный "слепок" из базы конкретного чата
+                    var chatMeta = await chatDB.get('last_message_metadata');
+
+                    // 3. Пытаемся найти существующий документ в базе пользователя, чтобы узнать его _rev
+                    try {
+                        const existing = await userDB.get(`${chat._id}`.toLowerCase());
+
+                        const userMetaDoc = {
+                            ...existing,                   // СОХРАНЯЕМ ВСЕ ПОЛЯ (включая members_id, _rev и прочее)
+                            lastMessage: {text: chatMeta.text, time: chatMeta.time, type: chatMeta.type},
+                            unreadCount: chatMeta.unreadCount,
+                            time: chatMeta.lastMessage?.time,
+                            // Если нужно обновить профиль собеседника в этом же доке:
+                            interlocatorInfo: interlocatorProfile
+                        };
+
+                        await userDB.put(userMetaDoc);
+
+                    } catch (err) {
+                        // Если документа нет (404) — это нормально, создадим новый без _rev
+                    }
+
+                    // 4. Сохраняем в базу пользователя
+
+                    // В этот момент сработает твой ЕДИНЫЙ слушатель userDB.changes(),
+                    // который обновит Proxy-объект chatStatusMap, и UI перерисуется!
+
+                } catch (e) {
+                    if (e.status === 404) {
+                        console.log(`В чате ${chat._id} еще нет сообщений (метаданные отсутствуют)`);
+                    } else {
+                        console.error(e);
+                        // console.error("Ошибка синхронизации метаданных:", e);
+                    }
+                }
+
+                chatsData[chat._id] = {
+                    chatInfo: interlocatorProfile,
+                    lastMessage: chatMeta,
+                    interlocatorId: interlocatorId
+                };
+            } catch (e) {
+                console.error("Ошибка загрузки профиля:", interlocatorId, e);
+            }
         }
     }
 
@@ -250,14 +285,15 @@ app.post('/send-message', async (req, res) => {
     const { dbName, uid, newMessage } = req.body;
     try {
         await sendMessage(dbName, uid, newMessage);
+
         return res.sendStatus(200);
     }
     catch (e) {
         console.error('Не удалось записать сообщение в базу: ', e)
         return res.status(500).json({ error: 'Internal Server Error' });
     }
-
 })
+
 
 const PORT = 5005;
 app.listen(PORT, () => {

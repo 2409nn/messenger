@@ -1,13 +1,16 @@
 <script setup>
 
-  import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted, onUnmounted} from 'vue'
   import { API_SERVER } from "@/db/config.js";
   import { userDataStore } from "@/stores/userData.js";
   import EmptyState from "@/components/emptyState.vue";
   import profile_default from "@/assets/imgs/avatars/profile_default.png"
   import counter from "@/components/counter.vue";
+  import { getRemoteDB } from "@/db/auth.service.js"
+  import { fetchChatsProfile } from "@/db/sync.service.js";
+  import { useRoamingData } from "@/stores/roaming.js";
 
-  const props = defineProps({
+const props = defineProps({
     activePage: {
       type: String,
       default: 'chats'
@@ -21,43 +24,16 @@
   const activeIndex = ref(null);
 
   const uid = userDataStore().userData.uid;
-  const chatsData = ref({}); // хранит в себе данные о чатах
-
-  const fetchProfiles = async () => {
-
-    const response = await fetch(`${API_SERVER}/chats-load`, {
-      method: "POST",
-      body: JSON.stringify({
-        uid: uid,
-      }),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!response.ok) {
-      return {};
-    }
-    else {
-      return await response.json();
-    }
-
-
-  };
+  const roamingData = useRoamingData().roaming;
+  const chatsData = roamingData.chatsData;
 
   // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
 
-
-
   onMounted(async () => {
-    // const chats = await loadUserChats(uid);
-    await fetchProfiles(uid).then((res) => {
+
+    await fetchChatsProfile(uid).then((res) => {
       chatsData.value = res.chatsData;
     });
-
-    // Запускаем "живое" обновление
-
-    const allChatDBs = {}; // Объект для хранения инстансов БД, чтобы не плодить лишние
 
   });
 
@@ -110,7 +86,7 @@
             <p class="recent__info-firstname">{{ chat.chatInfo?.firstname }}</p>
             <p class="recent__info-time">{{ chat.lastMessage?.time }}</p>
           </div>
-          <p class="recent__info-message">{{ chat.lastMessage?.lastText }}</p>
+          <p class="recent__info-message">{{ chat.lastMessage?.text }}</p>
           <counter class="recent__info-newMessages" :count="unreadCount" />
         </div>
       </li>

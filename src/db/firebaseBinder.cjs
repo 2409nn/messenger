@@ -162,7 +162,6 @@ async function initChatDB(idToken, dbName, uids) {
         // каждому участнику группы вставляем мета-документ чата
         console.log(uids);
         for (const uid of uids) {
-            console.log(`db_${uid.toLowerCase()}`);
 
             let userChatDoc = {
                 _id: `${dbName}`,

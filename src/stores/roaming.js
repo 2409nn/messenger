@@ -3,7 +3,9 @@ import { ref } from "vue";
 
 export const useRoamingData = defineStore("roaming", () => {
 
-    const roaming = ref({});
+    const roaming = ref({
+        chatsData: {}
+    });
 
     return { roaming };
 }, {

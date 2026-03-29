@@ -12,11 +12,13 @@ import alert from "@/components/alert.vue"
 import createWindow from "@/components/createWindow.vue"
 import preloader from "@/components/preloader.vue"
 
-import { ref, watch } from "vue"
+import {onMounted, ref, watch} from "vue"
 import DropMenu from "@/components/dropMenu.vue"
 import { onClickOutside } from "@vueuse/core"
 import router from "@/router/index.js";
 import {userDataStore} from "@/stores/userData.js";
+import { subscribeToUserUpdates } from "@/db/sync.service.js";
+import {useRoamingData} from "@/stores/roaming.js";
 
 // Референсы для всплывающих окон
 const isSettingsOpen = ref(false);
@@ -191,11 +193,36 @@ function handleUserSelected (payload) {
 }
 
 // Слежка за uid. Гнать на регистрацию если не зареган пользователь
-// const uid = userDataStore().userData.uid;
+const uid = userDataStore().userData.uid;
 // if (!uid) {
 //   userDataStore().clearUserData();
 //   router.push('/reg');
 // }
+
+const chatStatusMap = ref({}); // Объект для хранения инстансов БД, чтобы не плодить лишние
+const chatsData = useRoamingData().roaming.chatsData;
+
+// Запускаем "живое" обновление
+onMounted(() => {
+  subscribeToUserUpdates(uid, (update) => {
+    const { chatId, text, time, unreadCount } = update;
+
+    // Если такой чат уже есть в списке — обновляем только сообщение
+    if (chatsData.value[chatId]) {
+      chatsData.value[chatId].lastMessage = { text, time };
+      chatsData.value[chatId].unreadCount = unreadCount;
+
+      // Логика: если пришло сообщение, можно поднять чат вверх списка
+      // chatsData.value = sortChats(chatsData.value);
+    } else {
+      // Если чата нет (например, написали впервые), нужно либо обновить список целиком,
+      // либо подождать следующего fetchChatsProfile
+      console.log("Пришло сообщение из нового чата, которого нет в списке");
+    }
+  });
+
+  console.log("chatStatusMap: ", chatStatusMap);
+})
 
 </script>
 

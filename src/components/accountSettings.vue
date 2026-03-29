@@ -142,9 +142,9 @@
 
   onMounted(async () => {
 
-    if (!userData.uid) {
-      router.push('/reg');
-    }
+    // if (!userData.uid) {
+    //   router.push('/reg');
+    // }
 
     if (settings.autoSwitchTheme) {
       autoSwitchTheme();

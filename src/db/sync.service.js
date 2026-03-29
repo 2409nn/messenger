@@ -1,8 +1,7 @@
 // Сложная логика отслеживания изменений и "бесконечный цикл" разрешения конфликтов.
 
-
 import PouchDB from 'pouchdb';
-import { SYNC_OPTS } from './config.js';
+import {API_SERVER, SYNC_OPTS} from './config.js';
 
 export async function syncToChatDB(chatId, uid) {
     const password = '12345';
@@ -46,28 +45,72 @@ export async function updateLastMessageMetadata(chatDB, message) {
     }
 }
 
-export async function setupChatListeners(allChatDBs, chats, chatsData, uid) {
-    chats.forEach(chat => {
-        const dbName = chat._id.toLowerCase();
-        if (!allChatDBs[dbName]) {
-            const { localDB, syncProcessor } = syncToChatDB(dbName, uid);
-            allChatDBs[dbName] = { localDB, sync: syncProcessor };
+export const fetchChatsProfile = async (uid) => {
 
-            localDB.changes({
-                live: true,
-                since: 'now',
-                doc_ids: ['last_message_metadata'],
-                include_docs: true
-            }).on('change', (change) => {
-                const newMetadata = change.doc;
-                if (chatsData[chat._id]) {
-                    chatsData[chat._id].lastMessage = {
-                        text: newMetadata.text,
-                        time: newMetadata.time,
-                        sender: newMetadata.sender,
-                    };
-                }
-            });
+    const response = await fetch(`${API_SERVER}/chats-load`, {
+        method: "POST",
+        body: JSON.stringify({
+            uid: uid,
+        }),
+        headers: {
+            "Content-Type": "application/json"
         }
     });
+
+    if (!response.ok) {
+        return {};
+    }
+    else {
+        return await response.json();
+    }
+};
+
+
+// sync.service.js
+let changesHandler = null;
+let lastUpdateSeq = null;
+
+export function subscribeToUserUpdates(uid, onNewMessage) {
+    if (changesHandler) return;
+
+    const url = `http://localhost:5984/db_${uid}`.toLowerCase();
+    const userDB = new PouchDB(url, {
+        skip_setup: true,
+        auth: { username: 'admin', password: '12345' }
+    });
+
+    changesHandler = userDB.changes({
+        since: 'now', // Обязательно 'now', чтобы не спамить старьем при загрузке
+        live: true,
+        include_docs: true,
+        heartbeat: 20000
+    })
+        .on('change', (change) => {
+            if (change.seq === lastUpdateSeq) return;
+            lastUpdateSeq = change.seq;
+
+            const doc = change.doc;
+
+            // Фильтруем только метаданные чатов
+            if (doc._id.startsWith('chat_')) {
+                const chatId = doc.chatId || doc._id;
+
+                // Формируем "чистый" объект последнего сообщения
+                const lastMessage = {
+                    chatId: chatId,
+                    text: doc.lastMessage?.text || doc.text,
+                    time: doc.lastMessage?.time || doc.time,
+                    unreadCount: doc.unreadCount || 0
+                };
+
+                console.log(`[Sync] Выброс изменения для ${chatId}`);
+
+                // Отдаем наверх только то, что просили
+                onNewMessage(lastMessage);
+            }
+        })
+        .on('error', (err) => {
+            console.error("Ошибка синхронизации:", err);
+            changesHandler = null;
+        });
 }
