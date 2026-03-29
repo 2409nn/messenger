@@ -47,12 +47,12 @@ export async function sendMessage(dbName, uid, message) {
 }
 
 export async function loadUserChats(uid) {
-    const adminLogin = 'admin';
-    const adminPass = '12345';
+    // const adminLogin = 'admin';
+    const userPassword = '12345';
     const dbName = `db_${String(uid).toLowerCase()}`;
 
     // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы
-    const remoteURL = `http://${adminLogin}:${adminPass}@localhost:5984/${dbName}`;
+    const remoteURL = `http://${uid}:${userPassword}@localhost:5984/${dbName}`;
 
     const db = new PouchDB(remoteURL, { skip_setup: true });
 

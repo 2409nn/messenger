@@ -186,8 +186,11 @@ app.get('/find-user', async (req, res) => {
 
 app.post('/chats-load', async (req, res) => {
 
-    const uid = String(req.body.uid).toLowerCase();
+    const uid = req.body.uid;
     let chats = await loadUserChats(uid);
+
+    console.log("user chats: ", chats);
+
     chats = chats.rows;
 
     const chatsData = {};

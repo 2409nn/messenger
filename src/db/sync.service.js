@@ -61,6 +61,8 @@ export const fetchChatsProfile = async (uid) => {
         return {};
     }
     else {
+        let res = await response.json();
+        console.log(res);
         return await response.json();
     }
 };
@@ -69,6 +71,8 @@ export const fetchChatsProfile = async (uid) => {
 // sync.service.js
 let changesHandler = null;
 let lastUpdateSeq = null;
+
+
 
 export function subscribeToUserUpdates(uid, onNewMessage) {
     if (changesHandler) return;
@@ -117,4 +121,33 @@ export function subscribeToUserUpdates(uid, onNewMessage) {
             console.error("Ошибка синхронизации:", err);
             changesHandler = null;
         });
+}
+
+// sync.service.js
+let userDBInstance = null;
+let changesHandler = null;
+
+export async function stopUserSync() {
+    if (changesHandler) {
+        changesHandler.cancel();
+        changesHandler = null;
+    }
+    if (userDBInstance) {
+        // close() разрывает соединение и очищает память
+        await userDBInstance.close();
+        userDBInstance = null;
+    }
+    console.log("--- [Sync] Все соединения разорваны, память чиста ---");
+}
+
+export function subscribeToUserUpdates(uid, onUpdate) {
+    // Если каким-то чудом остался старый инстанс — убиваем его
+    if (userDBInstance) {
+        console.warn("Обнаружена старая база! Сначала вызовите stopUserSync");
+    }
+
+    const url = `http://admin:12345@localhost:5984/db_${uid}`.toLowerCase();
+    userDBInstance = new PouchDB(url, { skip_setup: true });
+
+    // ... твой код со слушателем ...
 }

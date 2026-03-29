@@ -43,10 +43,10 @@
 
     if (userData.uid === props.uid) { console.error('нельзя писать самому себе'); return }
 
-    await fetchChatsProfile(userData.uid).then((res) => {
-      console.log(res);
-      chatsData.value = res.chatsData;
-    });
+    // await fetchChatsProfile(userData.uid).then((res) => {
+    //   console.log(res);
+    //   chatsData.value = res.chatsData;
+    // });
 
 
     try {

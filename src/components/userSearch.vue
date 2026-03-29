@@ -3,6 +3,7 @@
   import { ref, computed } from "vue"
   import EmptyState from "@/components/emptyState.vue";
   import { API_SERVER } from "@/db/config.js";
+  import { fetchChatsProfile } from "@/db/sync.service.js";
 
   const isEmpty = ref(true)
   const emit = defineEmits(['update:isPopupVisible', 'userSelected']);
