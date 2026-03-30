@@ -21,7 +21,7 @@ app.use(cors({
 }));
 
 // Важно для предзапросов (браузер сначала шлет OPTIONS)
-app.options('*', cors());
+app.options('(.*)', cors());
 
 app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
     target: 'http://127.0.0.1:5984',
