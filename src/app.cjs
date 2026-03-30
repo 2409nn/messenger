@@ -15,7 +15,7 @@ const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64')
 const app = express();
 
 app.use(cors({
-    origin: '*', // разрешение для любых доменов
+    origin: ['https://messenger-3895-abzopyeas-2409nns-projects.vercel.app/', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));
