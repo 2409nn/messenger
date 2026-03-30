@@ -99,7 +99,6 @@ app.post('/chat-create', async (req, res) => {
     try {
         console.log("--- вызван запрос на /chat-create ---");
 
-        // 1. Достаем чистый токен
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.split(' ')[1];
 
@@ -111,10 +110,8 @@ app.post('/chat-create', async (req, res) => {
         const { id, uids } = req.body;
         console.log(`Создаю чат ID: ${id} для пользователей: ${uids}`);
 
-        // 2. Ждем выполнения функции создания БД
         await initChatDB(token, id, uids);
 
-        // 3. ОБЯЗАТЕЛЬНО отправляем ответ клиенту
         res.status(200).json({
             status: "success",
             message: "Database created",
@@ -172,7 +169,6 @@ app.get('/find-user', async (req, res) => {
 
         const docs = searchResults.rows.map(row => row.doc);
 
-        // Отправляем ОДИН ответ, объединяя данные, если нужно
         return res.status(200).json({
             status: "success",
             users: docs,
@@ -195,7 +191,7 @@ app.post('/chats-load', async (req, res) => {
 
     const chatsData = {};
 
-    for (let chatRow of chats) { // используем другое имя, чтобы не путаться
+    for (let chatRow of chats) {
 
         const chat = chatRow.doc;
 
@@ -213,10 +209,8 @@ app.post('/chats-load', async (req, res) => {
                 const interlocatorProfile = await db.get(interlocatorId);
 
                 try {
-                    // 1. Берем актуальный "слепок" из базы конкретного чата
                     var chatMeta = await chatDB.get('last_message_metadata');
 
-                    // 3. Пытаемся найти существующий документ в базе пользователя, чтобы узнать его _rev
                     try {
                         const existing = await userDB.get(`${chat._id}`.toLowerCase());
 
@@ -231,21 +225,13 @@ app.post('/chats-load', async (req, res) => {
 
                         await userDB.put(userMetaDoc);
 
-                    } catch (err) {
-                        // Если документа нет (404) — это нормально, создадим новый без _rev
-                    }
-
-                    // 4. Сохраняем в базу пользователя
-
-                    // В этот момент сработает твой ЕДИНЫЙ слушатель userDB.changes(),
-                    // который обновит Proxy-объект chatStatusMap, и UI перерисуется!
+                    } catch (err) {}
 
                 } catch (e) {
                     if (e.status === 404) {
                         console.log(`В чате ${chat._id} еще нет сообщений (метаданные отсутствуют)`);
                     } else {
                         console.error(e);
-                        // console.error("Ошибка синхронизации метаданных:", e);
                     }
                 }
 

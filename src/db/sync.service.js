@@ -1,4 +1,3 @@
-// Сложная логика отслеживания изменений и "бесконечный цикл" разрешения конфликтов.
 
 import PouchDB from 'pouchdb';
 import {API_SERVER, SYNC_OPTS} from './config.js';
@@ -20,24 +19,22 @@ export async function updateLastMessageMetadata(chatDB, message) {
         let lastMessage;
 
         try {
-            // Пытаемся получить существующий документ
             lastMessage = await chatDB.get(docId);
         } catch (e) {
-            // Если документ не найден (ошибка 404), создаем новый объект
+            // Если документ не найден, создаем новый объект
             if (e.status === 404 || e.name === 'not_found') {
                 lastMessage = { _id: docId };
             } else {
-                // Если ошибка другого рода — пробрасываем её выше
                 throw e;
             }
         }
 
-        // Обновляем поля (теперь lastMessage точно существует)
+        // Обновляем поля
         lastMessage.text = message.text;
         lastMessage.time = message.time;
         lastMessage.type = message.type;
 
-        // Сохраняем (put работает и на создание, и на обновление, если есть _rev)
+        // Сохраняем
         await chatDB.put(lastMessage);
 
     } catch (e) {
@@ -70,10 +67,6 @@ let userDBInstance = null;
 let changesHandler = null;
 let lastUpdateSeq = null;
 
-/**
- * Останавливает синхронизацию и полностью очищает память.
- * Вызывай это при Logout или перед сменой пользователя.
- */
 export async function stopUserSync() {
     if (changesHandler) {
         changesHandler.cancel();
@@ -92,10 +85,8 @@ export async function stopUserSync() {
  * Подписка на обновления базы конкретного пользователя.
  */
 export async function subscribeToUserUpdates(uid, onNewMessage) {
-    // 1. Если слушатель уже запущен, не плодим копии
     if (changesHandler) return;
 
-    // 2. Если есть старый инстанс от другого юзера (забыли закрыть) — прибиваем
     if (userDBInstance) {
         console.warn("[Sync] Обнаружена старая база! Очищаю...");
         await stopUserSync();
@@ -103,7 +94,6 @@ export async function subscribeToUserUpdates(uid, onNewMessage) {
 
     const url = `http://admin:12345@localhost:5984/db_${uid}`.toLowerCase();
 
-    // Создаем инстанс и сохраняем его в глобальную переменную модуля
     userDBInstance = new PouchDB(url, {
         skip_setup: true,
         auth: { username: 'admin', password: '12345' }
@@ -119,18 +109,15 @@ export async function subscribeToUserUpdates(uid, onNewMessage) {
         attachments: false
     })
         .on('change', (change) => {
-            // Пропускаем удаленные документы ("призраки")
             if (change.deleted || (change.doc && change.doc._deleted)) {
                 return;
             }
 
-            // Защита от дублей по seq
             if (change.seq === lastUpdateSeq) return;
             lastUpdateSeq = change.seq;
 
             const doc = change.doc;
 
-            // Фильтруем только метаданные чатов
             if (doc && doc._id.startsWith('chat_')) {
                 const chatId = doc.chatId || doc._id;
 
@@ -141,7 +128,6 @@ export async function subscribeToUserUpdates(uid, onNewMessage) {
                     unreadCount: doc.unreadCount || 0
                 };
 
-                // Отправляем чистые данные в коллбэк (во Vue компонент)
                 onNewMessage(lastMessage);
             }
         })

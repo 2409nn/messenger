@@ -102,7 +102,7 @@ export async function verifyUserPassword(email, password) {
             uid: userCredential.user.uid,
         };
     } catch (error) {
-        // Обрабатываем типичные ошибки
+        // Обрабатываем ошибки
         if (error.code === "auth/wrong-password") {
             return {success: false, message: "Неверный пароль"};
         } else if (error.code === "auth/user-not-found") {
