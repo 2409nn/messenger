@@ -15,9 +15,14 @@ const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64')
 const app = express();
 
 app.use(cors({
-    origin: ['https://messenger-3895-abzopyeas-2409nns-projects.vercel.app/', 'http://localhost:5173'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+    // Вместо '*' пишем функцию, которая разрешает любой входящий Origin,
+    // но при этом позволяет работать с credentials (это обход правила браузера)
+    origin: function (origin, callback) {
+        callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'ngrok-skip-browser-warning']
 }));
 
 // Важно для предзапросов (браузер сначала шлет OPTIONS)
