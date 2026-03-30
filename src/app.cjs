@@ -21,7 +21,6 @@ app.use(cors({
 }));
 
 // Важно для предзапросов (браузер сначала шлет OPTIONS)
-app.options('(.*)', cors());
 
 app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
     target: 'http://127.0.0.1:5984',
@@ -290,7 +289,7 @@ app.post('/send-message', async (req, res) => {
 })
 
 
-const PORT = 80;
+const PORT = 5005;
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
