@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 local_user_db
+_pouch_local_user_db/
+*.db
 .DS_Store
 dist
 dist-ssr
