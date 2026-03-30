@@ -53,7 +53,7 @@ export const fetchChatsProfile = async (uid) => {
             uid: uid,
         }),
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
     });
 
@@ -61,93 +61,93 @@ export const fetchChatsProfile = async (uid) => {
         return {};
     }
     else {
-        let res = await response.json();
-        console.log(res);
         return await response.json();
     }
 };
 
 
-// sync.service.js
+let userDBInstance = null;
 let changesHandler = null;
 let lastUpdateSeq = null;
 
-
-
-export function subscribeToUserUpdates(uid, onNewMessage) {
-    if (changesHandler) return;
-
-    const url = `http://localhost:5984/db_${uid}`.toLowerCase();
-    const userDB = new PouchDB(url, {
-        skip_setup: true,
-        auth: { username: 'admin', password: '12345' }
-    });
-
-    userDB.changes({
-        since: 'now',       // Игнорировать всё, что было до этой секунды
-        live: true,
-        include_docs: true,
-        conflicts: false,   // Не тянуть историю конфликтов
-        attachments: false  // Не тянуть вложения
-    })
-        .on('change', (change) => {
-            // Если в объекте есть хоть намек на удаление – в топку
-            if (change.deleted || (change.doc && change.doc._deleted)) {
-                return;
-                if (change.seq === lastUpdateSeq) return;
-                lastUpdateSeq = change.seq;
-
-                const doc = change.doc;
-
-                // Фильтруем только метаданные чатов
-                if (doc._id.startsWith('chat_')) {
-                    const chatId = doc.chatId || doc._id;
-
-                    const lastMessage = {
-                        chatId: chatId,
-                        text: doc.lastMessage?.text || doc.text,
-                        time: doc.lastMessage?.time || doc.time,
-                        unreadCount: doc.unreadCount || 0
-                    };
-
-                    // console.log(`[Sync] Выброс изменения для ${chatId}`);
-
-                    // Отдаем наверх только то, что просили
-                    onNewMessage(lastMessage);
-                }
-            }
-        })
-        .on('error', (err) => {
-            console.error("Ошибка синхронизации:", err);
-            changesHandler = null;
-        });
-}
-
-// sync.service.js
-let userDBInstance = null;
-let changesHandler = null;
-
+/**
+ * Останавливает синхронизацию и полностью очищает память.
+ * Вызывай это при Logout или перед сменой пользователя.
+ */
 export async function stopUserSync() {
     if (changesHandler) {
         changesHandler.cancel();
         changesHandler = null;
+        console.log("[Sync] Слушатель остановлен");
     }
     if (userDBInstance) {
-        // close() разрывает соединение и очищает память
         await userDBInstance.close();
         userDBInstance = null;
+        console.log("[Sync] Инстанс базы закрыт");
     }
-    console.log("--- [Sync] Все соединения разорваны, память чиста ---");
+    lastUpdateSeq = null;
 }
 
-export function subscribeToUserUpdates(uid, onUpdate) {
-    // Если каким-то чудом остался старый инстанс — убиваем его
+/**
+ * Подписка на обновления базы конкретного пользователя.
+ */
+export async function subscribeToUserUpdates(uid, onNewMessage) {
+    // 1. Если слушатель уже запущен, не плодим копии
+    if (changesHandler) return;
+
+    // 2. Если есть старый инстанс от другого юзера (забыли закрыть) — прибиваем
     if (userDBInstance) {
-        console.warn("Обнаружена старая база! Сначала вызовите stopUserSync");
+        console.warn("[Sync] Обнаружена старая база! Очищаю...");
+        await stopUserSync();
     }
 
     const url = `http://admin:12345@localhost:5984/db_${uid}`.toLowerCase();
-    userDBInstance = new PouchDB(url, { skip_setup: true });
 
-    // ... твой код со слушателем ...
+    // Создаем инстанс и сохраняем его в глобальную переменную модуля
+    userDBInstance = new PouchDB(url, {
+        skip_setup: true,
+        auth: { username: 'admin', password: '12345' }
+    });
+
+    console.log(`--- [Sync] Слушатель запущен для: ${uid} ---`);
+
+    changesHandler = userDBInstance.changes({
+        since: 'now',
+        live: true,
+        include_docs: true,
+        conflicts: false,
+        attachments: false
+    })
+        .on('change', (change) => {
+            // Пропускаем удаленные документы ("призраки")
+            if (change.deleted || (change.doc && change.doc._deleted)) {
+                return;
+            }
+
+            // Защита от дублей по seq
+            if (change.seq === lastUpdateSeq) return;
+            lastUpdateSeq = change.seq;
+
+            const doc = change.doc;
+
+            // Фильтруем только метаданные чатов
+            if (doc && doc._id.startsWith('chat_')) {
+                const chatId = doc.chatId || doc._id;
+
+                const lastMessage = {
+                    chatId: chatId,
+                    text: doc.lastMessage?.text || doc.text,
+                    time: doc.lastMessage?.time || doc.time,
+                    unreadCount: doc.unreadCount || 0
+                };
+
+                // Отправляем чистые данные в коллбэк (во Vue компонент)
+                onNewMessage(lastMessage);
+            }
+        })
+        .on('error', (err) => {
+            console.error("[Sync] Ошибка синхронизации:", err);
+            // Если ошибка фатальна (например, 401), сбрасываем хендлер для перезапуска
+            changesHandler = null;
+        });
 }

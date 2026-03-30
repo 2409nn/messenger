@@ -59,7 +59,7 @@
         return;
       }
 
-      const token = await user.getIdToken()
+      const token = await user.getIdToken();
 
       const chatId = await createChatDB([userData.uid, props.uid], token) // создаем чат
 

@@ -54,16 +54,22 @@ export async function loadUserChats(uid) {
     // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы
     const remoteURL = `http://${uid}:${userPassword}@localhost:5984/${dbName}`;
 
-    const db = new PouchDB(remoteURL, { skip_setup: true });
+    let db = new PouchDB(remoteURL, { skip_setup: true });
 
     try {
-        return await db.allDocs({
+        let res = await db.allDocs({
             include_docs: true,
             startkey: 'chat_',
             endkey: 'chat_\uffff'
         });
+
+        db = null;
+        return res;
+
+
     } catch (error) {
         console.error(`[LoadChats] Ошибка для юзера ${uid}:`, error.message);
+        db = null;
         throw error; // Чтобы Express выдал ошибку, а не пустой ответ
     }
 }

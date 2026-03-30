@@ -3,17 +3,22 @@
 import PouchDB from 'pouchdb';
 import { COUCHDB_URL, SYNC_OPTS } from './config.js';
 
-export async function initLocalUserDB(uid, dbName, password) {
-    const localDB = new PouchDB('local_user_db');
-    const remoteURL = `http://${encodeURIComponent(uid)}:${encodeURIComponent(password)}@localhost:5984/${dbName}`;
-    const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
+export async function initLocalUserDB(uid, dbName) {
+    // На сервере нам не нужна локальная копия PouchDB!
+    // Мы просто работаем напрямую с CouchDB
+    const password = '12345'; // засекретить
+    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`; // Используй админские права на сервере
+    const remoteDB = new PouchDB(remoteURL);
 
-    localDB.sync(remoteDB, SYNC_OPTS)
-        .on('change', (info) => console.log('Данные обновились:', info))
-        .on('paused', (err) => console.log('Синхронизация приостановлена'))
-        .on('error', (err) => console.error('Ошибка синхронизации:', err));
+    // Просто проверяем, что база существует/создается
+    try {
+        await remoteDB.info();
+        console.log(`[Server] База ${dbName} готова к работе.`);
+    } catch (err) {
+        console.error(`[Server] Ошибка при обращении к ${dbName}:`, err);
+    }
 
-    return localDB;
+    return remoteDB;
 }
 
 export function getDB(dbName) {

@@ -97,7 +97,7 @@ app.post('/login', async (req, res) => {
 
 app.post('/chat-create', async (req, res) => {
     try {
-        // console.log("--- Запрос на создание чата получен ---");
+        console.log("--- вызван запрос на /chat-create ---");
 
         // 1. Достаем чистый токен
         const authHeader = req.headers.authorization;
@@ -109,7 +109,7 @@ app.post('/chat-create', async (req, res) => {
         }
 
         const { id, uids } = req.body;
-        // console.log(`Создаю чат ID: ${id} для пользователей: ${uids}`);
+        console.log(`Создаю чат ID: ${id} для пользователей: ${uids}`);
 
         // 2. Ждем выполнения функции создания БД
         await initChatDB(token, id, uids);
@@ -155,7 +155,7 @@ app.put('/update-profile', async (req, res) => {
 app.get('/find-user', async (req, res) => {
     try {
 
-        const searchText = req.query.text; // Данные берем из req.query, так как это GET запрос
+        const searchText = req.query.text;
 
         if (!searchText) {
             return res.status(400).json({ error: "Search text is required" });
@@ -199,12 +199,14 @@ app.post('/chats-load', async (req, res) => {
 
         const chat = chatRow.doc;
 
-        for (userId of chat.members_id) {
-            const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
-            const userPassword = '12345' // засекретить пароль
-            const userDB = await getDB(`http://admin:12345@localhost:5984/db_${uid}`);
+        for (let userId of chat.members_id) {
 
-            const interlocatorId = chat.members_id.find(id => id.toLowerCase() !== uid);
+            console.log('userId: ', userId);
+
+            const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
+            const userDB = await getDB(`http://admin:12345@localhost:5984/db_${userId}`);
+
+            const interlocatorId = chat.members_id.find(id => id.toLowerCase() !== uid.toLowerCase());
 
             try {
                 const db = await getUserProfile();
@@ -219,7 +221,7 @@ app.post('/chats-load', async (req, res) => {
                         const existing = await userDB.get(`${chat._id}`.toLowerCase());
 
                         const userMetaDoc = {
-                            ...existing,                   // СОХРАНЯЕМ ВСЕ ПОЛЯ (включая members_id, _rev и прочее)
+                            ...existing,
                             lastMessage: {text: chatMeta.text, time: chatMeta.time, type: chatMeta.type},
                             unreadCount: chatMeta.unreadCount,
                             time: chatMeta.lastMessage?.time,

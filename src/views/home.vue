@@ -19,6 +19,7 @@ import router from "@/router/index.js";
 import {userDataStore} from "@/stores/userData.js";
 import { subscribeToUserUpdates } from "@/db/sync.service.js";
 import {useRoamingData} from "@/stores/roaming.js";
+import {fetchChatsProfile} from "@/db/sync.service.js"
 
 // Референсы для всплывающих окон
 const isSettingsOpen = ref(false);
@@ -187,11 +188,6 @@ function handleCreatedData (payload) {
   console.log(payload);
 }
 
-function handleUserSelected (payload) {
-  // todo сделать так, чтобы в user появился новый документ с метаданными нового чата
-
-}
-
 // Слежка за uid. Гнать на регистрацию если не зареган пользователь
 const uid = userDataStore().userData.uid;
 // if (!uid) {
@@ -203,8 +199,8 @@ const chatStatusMap = ref({}); // Объект для хранения инст�
 const chatsData = useRoamingData().roaming.chatsData;
 
 // Запускаем "живое" обновление
-onMounted(() => {
-  subscribeToUserUpdates(uid, (update) => {
+onMounted(async () => {
+  await subscribeToUserUpdates(uid, (update) => {
     const { chatId, text, time, unreadCount } = update;
 
     // Если такой чат уже есть в списке — обновляем только сообщение
@@ -216,7 +212,7 @@ onMounted(() => {
       // chatsData.value = sortChats(chatsData.value);
     } else {
       // Если чата нет (например, написали впервые), нужно либо обновить список целиком,
-      // либо подождать следующего fetchChatsProfile
+      fetchChatsProfile();
       console.log("Пришло сообщение из нового чата, которого нет в списке");
     }
   });
@@ -235,7 +231,6 @@ onMounted(() => {
 <!--  <preloader />-->
 
   <user-search
-      @user-selected="handleUserSelected"
       :class="{'active': isSearchOpen}"
       v-model:is-popup-visible="isSearchOpen"
   />
