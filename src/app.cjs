@@ -17,7 +17,7 @@ const app = express();
 app.use(cors({
     origin: '*', // разрешение для любых доменов
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));
 
 // Важно для предзапросов (браузер сначала шлет OPTIONS)
@@ -290,7 +290,7 @@ app.post('/send-message', async (req, res) => {
 })
 
 
-const PORT = 5005;
+const PORT = 80;
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
