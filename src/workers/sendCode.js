@@ -9,15 +9,17 @@ const generateCode = () => {
 export const sendCodeToEmail = async (email) => {
     const verificationCode = generateCode(); // Создаем код
 
+    console.log('email: ', email);
+
     try {
         await emailjs.send(
-            'service_8rbl13n',
-            'template_f24wjhe',
+            'service_6uss6gs',
+            'template_ndcqm6y',
             {
                 to_email: email,
-                verification_code: verificationCode, // Передаем сгенерированный код
+                passcode: verificationCode, // Передаем сгенерированный код
             },
-            'QjoW_-j0AvIA09Gbp'
+            '1J2ttkNrIXd68QRNB'
         );
 
         localStorage.setItem("codeCreatedAt", Date.now());
