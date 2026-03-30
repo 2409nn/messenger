@@ -20,6 +20,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Важно для предзапросов (браузер сначала шлет OPTIONS)
+app.options('*', cors());
+
 app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
     target: 'http://127.0.0.1:5984',
     changeOrigin: true,
