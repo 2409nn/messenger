@@ -15,7 +15,7 @@ const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64')
 const app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5173', // адрес vue страницы
+    origin: '*', // разрешение для любых доменов
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
