@@ -10,8 +10,15 @@ const { putUserProfile, getProfileById, getUserProfile, updateUserProfile } = re
 const {loadUserChats} = require("./db/chat.service.js");
 const {sendMessage} = require("./db/chat.service.js");
 const {fetchChatsProfile} = require("./db/sync.service.js");
+//
+// require('dotenv').config();
+//
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const USER_PASSWORD = process.env.USER_PASSWORD;
+//
+// console.log(USER_PASSWORD)
 
-const authHeaderAdmin = 'Basic ' + Buffer.from('admin:12345').toString('base64');
+const authHeaderAdmin = 'Basic ' + Buffer.from(`admin:${ADMIN_PASSWORD}`).toString('base64');
 const app = express();
 
 app.use(cors({
@@ -39,9 +46,8 @@ app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
             console.error("[PROXY] КРИТИЧЕСКАЯ ОШИБКА: UID не пришел в заголовках!");
         }
 
-        const userPassword = '12345';
         // Обязательно .toLowerCase(), CouchDB не любит заглавные в именах юзеров
-        const auth = 'Basic ' + Buffer.from(`${uid}:${userPassword}`).toString('base64');
+        const auth = 'Basic ' + Buffer.from(`${uid}:${USER_PASSWORD}`).toString('base64');
 
         proxyReq.removeHeader('Authorization');
         proxyReq.removeHeader('cookie');
@@ -65,9 +71,8 @@ app.post('/auth-sync', async (req, res) => {
         }
 
         const result = await handleUserSync(idToken);
-        const password = '12345' // засекретить пароль
 
-        await initLocalUserDB(user.uid, `db_${user.uid.toLowerCase()}`, password);
+        await initLocalUserDB(user.uid, `db_${user.uid.toLowerCase()}`, USER_PASSWORD);
         await putUserProfile(
             {_id: user.uid, username: userData.username, firstname: userData.firstname, lastname: userData.lastname},
         );
@@ -104,7 +109,6 @@ app.post('/login', async (req, res) => {
 
 app.post('/chat-create', async (req, res) => {
     try {
-        console.log("--- вызван запрос на /chat-create ---");
 
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.split(' ')[1];
@@ -206,8 +210,8 @@ app.post('/chats-load', async (req, res) => {
 
             console.log('userId: ', userId);
 
-            const chatDB = await getDB(`http://admin:12345@localhost:5984/${chat._id}`);
-            const userDB = await getDB(`http://admin:12345@localhost:5984/db_${userId}`);
+            const chatDB = await getDB(`http://admin:${USER_PASSWORD}@localhost:5984/${chat._id}`);
+            const userDB = await getDB(`http://admin:${USER_PASSWORD}@localhost:5984/db_${userId}`);
 
             const interlocatorId = chat.members_id.find(id => id.toLowerCase() !== uid.toLowerCase());
 
@@ -283,6 +287,7 @@ app.get('/profile', async (req, res) => {
 app.post('/send-message', async (req, res) => {
     const { dbName, uid, newMessage } = req.body;
     try {
+        console.log('вн1')
         await sendMessage(dbName, uid, newMessage);
 
         return res.sendStatus(200);

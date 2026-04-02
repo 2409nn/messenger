@@ -20,23 +20,17 @@ const props = defineProps({
       default: false
     }
   })
-
   const activeIndex = ref(null);
 
   const uid = userDataStore().userData.uid;
   const roamingData = useRoamingData().roaming;
   const chatsData = roamingData.chatsData;
 
-  // Записываем данные. Vue "увидит" добавление нового ключа в reactive объект
-
   onMounted(async () => {
-
     await fetchChatsProfile(uid).then((res) => {
       chatsData.value = res.chatsData;
     });
-
   });
-
 
   const showData = computed(() => {
     if (props.activePage === 'stream') return {};
@@ -49,7 +43,7 @@ const props = defineProps({
   const showDataLength = computed(() => {
     return showData.value ? Object.keys(showData.value).length : 0;
       }
-  ) // Длина объекта с данными которые нужно отобразить
+  )
 
   const emit = defineEmits(["clickChat"])
 

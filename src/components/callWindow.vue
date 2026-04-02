@@ -1,5 +1,5 @@
 <script setup>
-  import userAvatar from "@/assets/imgs/avatars/user_1.jpg"
+  import userAvatar from "@/assets/imgs/avatars/profile_default.png"
   import { ref, watch, defineEmits } from "vue"
   import callSound from "@/assets/sounds/phone-ringing.mp3"
   import callEnded from "@/assets/sounds/call-ended.mp3"
@@ -9,11 +9,6 @@
   callingSound.loop = true;
 
   const props = defineProps({
-    // userData: {
-    //   type: Object,
-    //   required: true
-    //
-    // }
     active: {
       type: Boolean,
       default: false
@@ -21,7 +16,11 @@
     isVideo: {
       type: Boolean,
       default: false
-    }
+    },
+    // userData: {
+    //   type: Object,
+    //   required: true
+    // }
   })
 
   const emit = defineEmits(["callEnded"])
@@ -55,10 +54,10 @@
 </script>
 
 <template>
-<div class="callWindow" :class="{'active': isActive}">
+<div class="callWindow" :class="{'active': isActive }">
 
   <img class="callWindow__avatar" :src="userAvatar" alt="avatar">
-  <p class="callWindow__title">Ope</p>
+  <p class="callWindow__title">{{ userData?.firstname || '' }} {{ userData?.lastname || '' }}</p>
   <div style="font-size: 56px; font-weight: 300; margin: 45px 0" class="callWindow__stopwatch">4:21</div>
   <div class="callWindow__buttons">
     <button class="callWindow__button callWindow__button-microphone" @click="isMicrophoneActive = !isMicrophoneActive">

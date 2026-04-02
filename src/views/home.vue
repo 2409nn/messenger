@@ -216,8 +216,6 @@ onMounted(async () => {
       console.log("Пришло сообщение из нового чата, которого нет в списке");
     }
   });
-
-  // console.log("chatStatusMap: ", chatStatusMap);
 })
 
 </script>

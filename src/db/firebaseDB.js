@@ -102,17 +102,14 @@ export class DataBase {
 
     async getCode(email) {
         try {
-            const usersRef = collection(this.db, "codes");
-            const q = query(usersRef, where("email", "==", email));
-            const querySnapshot = await getQueryDocs(q);
+            const codeRef = doc(this.db, "codes", email);
+            const codeSnapshot = await getDoc(codeRef);
 
-            if (querySnapshot.empty) {return null;} // Нет такого пользователя
+            if (!codeSnapshot.exists()) {return null;} // Нет такого пользователя
 
             // Если пользователь найден, возвращаем первый документ
-            const userDoc = querySnapshot.docs[0];
-            return {
-                ...userDoc.data()
-            };
+            return codeSnapshot.data();
+
         } catch (e) {
             console.error("Ошибка при поиске пользователя по email:", e);
             return null;
