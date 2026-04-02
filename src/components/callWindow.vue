@@ -54,7 +54,7 @@
 </script>
 
 <template>
-<div class="callWindow" :class="{'active': isActive}">
+<div class="callWindow" :class="{'active': isActive }">
 
   <img class="callWindow__avatar" :src="userAvatar" alt="avatar">
   <p class="callWindow__title">{{ userData?.firstname || '' }} {{ userData?.lastname || '' }}</p>
