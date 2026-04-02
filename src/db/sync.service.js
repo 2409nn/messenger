@@ -2,9 +2,19 @@
 import PouchDB from 'pouchdb';
 import {API_SERVER, SYNC_OPTS} from './config.js';
 
+
+const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+const USER_PASSWORD = isNode
+    ? process.env.USER_PASSWORD
+    : import.meta.env.VITE_USER_PASSWORD;
+
+const ADMIN_PASSWORD = isNode
+    ?process.env.ADMIN_PASSWORD
+    : import.meta.env.VITE_ADMIN_PASSWORD;
+
+
 export async function syncToChatDB(chatId, uid) {
-    const password = '12345';
-    const remoteURL = `http://${uid}:${password}@localhost:5984/${chatId}`;
+    const remoteURL = `http://${uid}:${USER_PASSWORD}@localhost:5984/${chatId}`;
     const localDB = new PouchDB(chatId.toLowerCase());
     const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
 
@@ -92,11 +102,11 @@ export async function subscribeToUserUpdates(uid, onNewMessage) {
         await stopUserSync();
     }
 
-    const url = `http://admin:12345@localhost:5984/db_${uid}`.toLowerCase();
+    const url = `http://admin:${ADMIN_PASSWORD}@localhost:5984/db_${uid}`.toLowerCase();
 
     userDBInstance = new PouchDB(url, {
         skip_setup: true,
-        auth: { username: 'admin', password: '12345' }
+        auth: { username: 'admin', password: ADMIN_PASSWORD }
     });
 
     console.log(`--- [Sync] Слушатель запущен для: ${uid} ---`);
@@ -135,5 +145,9 @@ export async function subscribeToUserUpdates(uid, onNewMessage) {
             console.error("[Sync] Ошибка синхронизации:", err);
             // Если ошибка фатальна (например, 401), сбрасываем хендлер для перезапуска
             changesHandler = null;
+
+            if (err.reason === 'unauthorized') {
+                // Сделать так, чтобы страница переносилась на /reg
+            }
         });
 }

@@ -3,6 +3,16 @@
 import PouchDB from 'pouchdb';
 import { COUCHDB_URL, ADMIN_AUTH, API_SERVER, SYNC_OPTS } from './config.js';
 
+const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+
+const ADMIN_PASSWORD = isNode
+    ? process.env.ADMIN_PASSWORD
+    : import.meta.env.VITE_ADMIN_PASSWORD;
+
+const USER_PASSWORD = isNode
+    ? process.env.ADMIN_PASSWORD
+    : import.meta.env.VITE_USER_PASSWORD;
+
 export async function createChatDB(uids, token) {
     const sortedIds = [...uids].sort().join('|');
     const msgUint8 = new TextEncoder().encode(sortedIds);
@@ -27,7 +37,7 @@ export async function createChatDB(uids, token) {
 }
 
 export async function addUsersToChat(dbName, uids) {
-    const serverURL = `http://${ADMIN_AUTH}@localhost:5984/${dbName}/_security`;
+    const serverURL = `http://admin:${ADMIN_PASSWORD}@localhost:5984/${dbName}/_security`;
     const securityData = {
         admins: { names: ["admin"], roles: [] },
         members: { names: uids, roles: [] }
@@ -40,19 +50,17 @@ export async function addUsersToChat(dbName, uids) {
 }
 
 export async function sendMessage(dbName, uid, message) {
-    const password = '12345';
-    const remoteURL = `http://${uid}:${password}@localhost:5984/${dbName}`;
+    const remoteURL = `http://${uid}:${USER_PASSWORD}@localhost:5984/${dbName}`;
     const remoteDB = new PouchDB(remoteURL, { skip_setup: true });
     await remoteDB.put(message);
 }
 
 export async function loadUserChats(uid) {
     const adminLogin = 'admin';
-    const userPassword = '12345';
     const dbName = `db_${String(uid).toLowerCase()}`;
 
     // Стучимся как админ, чтобы иметь права на чтение любой пользовательской базы
-    const remoteURL = `http://${adminLogin}:${userPassword}@localhost:5984/${dbName}`;
+    const remoteURL = `http://${adminLogin}:${ADMIN_PASSWORD}@localhost:5984/${dbName}`;
 
     let db = new PouchDB(remoteURL, { skip_setup: true });
 

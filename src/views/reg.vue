@@ -250,7 +250,6 @@
 
     </section>
 
-
 </template>
 
 <style scoped lang="css">

@@ -1,4 +1,3 @@
-// Вспомогательные функции (обязательно внутри воркера)
 const encode = (txt) => new TextEncoder().encode(txt);
 const decode = (buffer) => new TextDecoder().decode(buffer);
 
@@ -10,7 +9,6 @@ self.onmessage = async (e) => {
     try {
         switch (command) {
             case 'INIT_KEY':
-                // Сохраняем полученный CryptoKey во внутреннюю переменную
                 sharedKey = key;
                 self.postMessage({ command: 'READY' });
                 break;

@@ -21,7 +21,6 @@ import { userDataStore } from "@/stores/userData.js";
 // --- Изображения ---
 import userAvatar2 from '@/assets/imgs/avatars/user_2.jpg';
 import profile_default from '@/assets/imgs/avatars/profile_default.png';
-import {COUCHDB_URL} from "@/db/config.js";
 import {useRoamingData} from "@/stores/roaming.js";
 
 const chatsData = useRoamingData().roaming.chatsData;
@@ -58,7 +57,7 @@ let currentSync = null;
 
 const loadMessagesFromDB = async (db) => {
   try {
-    const result = await db.query('chat_logic/by_time', {
+    const result = await db.query('chat_logic/by_date', {
       include_docs: true,
     });
     chatDataLocal[props.activeChat.index] = result.rows.map(row => row.doc);

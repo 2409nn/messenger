@@ -50,7 +50,7 @@ export async function registerWithEmail(email, password) {
     }
 }
 
-// Вход через Google
+// Вход через Google (будет внедренно в будущем)
 export async function signInWithGoogle() {
     try {
         const result = await signInWithPopup(auth, provider);

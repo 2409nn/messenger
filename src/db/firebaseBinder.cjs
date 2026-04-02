@@ -1,5 +1,9 @@
 // Задачи файла: инициализировать админа и создать функцию для проверки токена, который пришлет фронтенд.
-const nano = require('nano')("http://admin:12345@localhost:5984"); // засекретить пароль
+require ('dotenv').config();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const USER_PASSWORD = process.env.USER_PASSWORD;
+
+const nano = require('nano')(`http://admin:${ADMIN_PASSWORD}@localhost:5984`);
 
 var admin = require("firebase-admin");
 var serviceAccount = require("../API/nuclear-abf45-firebase-adminsdk-fbsvc-7dd90feb51.json");
@@ -33,7 +37,7 @@ async function verifyUserAndRole(idToken) {
 }
 
 async function registerInCouch(uid, password) {
-    const login = await nano.auth('admin', '12345');
+    const login = await nano.auth('admin', USER_PASSWORD);
     const usersDb = nano.use('_users'); // Системная база пользователей
     const userDocId = `org.couchdb.user:${uid}`; // ID должен быть именно в таком формате
 
@@ -58,7 +62,7 @@ async function registerInCouch(uid, password) {
 async function handleUserSync(idToken) {
     const userData = await verifyUserAndRole(idToken);
     const uid = userData.uid;
-    const password = "12345"; // засекретить пароль
+    const password = USER_PASSWORD;
 
     // регистрация на couchDB
     await registerInCouch(uid, password);
@@ -85,10 +89,10 @@ async function handleUserSync(idToken) {
         });
     } catch (e) {
         if (e.reason === 'The database could not be created, the file already exists.') {
-            console.log(`ℹ️ База ${dbName} уже существует, идем дальше.`);
+            console.log(`База ${dbName} уже существует, идем дальше.`);
         } else {
             // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
-            console.error(`❌ Ошибка создания базы ${dbName}:`, e.reason || e.message);
+            console.error(`Ошибка создания базы ${dbName}:`, e.reason || e.message);
             throw e;
         }
     }
@@ -100,7 +104,7 @@ async function handleUserSync(idToken) {
 async function initChatDB(idToken, dbName, uids) {
     const userData = await verifyUserAndRole(idToken);
     const uid = userData.uid;
-    const password = "12345"; // засекретить пароль
+    const password = USER_PASSWORD;
 
     console.log(dbName);
 
@@ -122,6 +126,13 @@ async function initChatDB(idToken, dbName, uids) {
                     map: function (doc) {
                         if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.time, doc);
+                        }
+                    }.toString() // Nano требует функции в виде строк
+                },
+                by_date: {
+                    map: function (doc) {
+                        if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
+                            emit(doc.date, doc);
                         }
                     }.toString() // Nano требует функции в виде строк
                 },
@@ -182,10 +193,10 @@ async function initChatDB(idToken, dbName, uids) {
 
     } catch (e) {
         if (e.reason === 'The database could not be created, the file already exists.') {
-            console.log(`ℹ️ База ${dbName} уже существует, идем дальше.`);
+            console.log(`База ${dbName} уже существует, идем дальше.`);
         } else {
             // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
-            console.error(`❌ Ошибка создания базы ${dbName}:`, e.reason || e.message);
+            console.error(`Ошибка создания базы ${dbName}:`, e.reason || e.message);
             throw e;
         }
     }
