@@ -13,11 +13,6 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-/**
- * Проверяет токен и возвращает данные пользователя, включая его роль.
- * @param {string} idToken
- */
-
 async function verifyUserAndRole(idToken) {
     try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
@@ -38,8 +33,8 @@ async function verifyUserAndRole(idToken) {
 
 async function registerInCouch(uid, password) {
     const login = await nano.auth('admin', USER_PASSWORD);
-    const usersDb = nano.use('_users'); // Системная база пользователей
-    const userDocId = `org.couchdb.user:${uid}`; // ID должен быть именно в таком формате
+    const usersDb = nano.use('_users');
+    const userDocId = `org.couchdb.user:${uid}`;
 
     try {
         await usersDb.insert({
@@ -79,7 +74,6 @@ async function handleUserSync(idToken) {
             members: { names: [uid], roles: [] }
         };
 
-        // Отправляем PUT запрос прямо на /db_name/_security
         // nano.request — это универсальный способ достучаться до любого API CouchDB
         await nano.request({
             db: dbName,
@@ -91,7 +85,6 @@ async function handleUserSync(idToken) {
         if (e.reason === 'The database could not be created, the file already exists.') {
             console.log(`База ${dbName} уже существует, идем дальше.`);
         } else {
-            // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
             console.error(`Ошибка создания базы ${dbName}:`, e.reason || e.message);
             throw e;
         }
@@ -127,14 +120,14 @@ async function initChatDB(idToken, dbName, uids) {
                         if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.time, doc);
                         }
-                    }.toString() // Nano требует функции в виде строк
+                    }.toString()
                 },
                 by_date: {
                     map: function (doc) {
                         if (doc.type === 'message' && doc._id !== 'last_message_metadata') {
                             emit(doc.date, doc);
                         }
-                    }.toString() // Nano требует функции в виде строк
+                    }.toString()
                 },
                 by_sender: {
                     map: function (doc) {
@@ -151,7 +144,7 @@ async function initChatDB(idToken, dbName, uids) {
                     }
                 }
             },
-            // Можно добавить фильтр для репликации
+
             filters: {
                 relevant_messages: function(doc, req) {
                     return doc.type === 'message';
@@ -173,10 +166,10 @@ async function initChatDB(idToken, dbName, uids) {
             body: securityDoc
         });
 
-        await db.insert(chatDesignDoc); // вставляем автоматически дизайн документ для фильтрации сообщений
-        await db.insert(metaDataDoc); // вставляем автоматически дизайн документ для фильтрации сообщений
+        await db.insert(chatDesignDoc);
+        await db.insert(metaDataDoc);
 
-        // каждому участнику группы вставляем мета-документ чата
+        // каждому участнику чата вставляем мета-документ чата
         console.log(uids);
         for (let userId of uids) {
 
@@ -195,7 +188,6 @@ async function initChatDB(idToken, dbName, uids) {
         if (e.reason === 'The database could not be created, the file already exists.') {
             console.log(`База ${dbName} уже существует, идем дальше.`);
         } else {
-            // ЕСЛИ ТУТ ВЫЛЕТИТ "You are not a server admin", значит логин/пароль в шапке файла неверные
             console.error(`Ошибка создания базы ${dbName}:`, e.reason || e.message);
             throw e;
         }

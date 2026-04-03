@@ -198,7 +198,7 @@ const uid = userDataStore().userData.uid;
 const chatStatusMap = ref({}); // Объект для хранения инстансов БД, чтобы не плодить лишние
 const chatsData = useRoamingData().roaming.chatsData;
 
-// Запускаем "живое" обновление
+// Запускаем живое обновление
 onMounted(async () => {
   await subscribeToUserUpdates(uid, (update) => {
     const { chatId, text, time, unreadCount } = update;
@@ -208,7 +208,7 @@ onMounted(async () => {
       chatsData.value[chatId].lastMessage = { text, time };
       chatsData.value[chatId].unreadCount = unreadCount;
 
-      // Логика: если пришло сообщение, можно поднять чат вверх списка
+      // если пришло сообщение, можно поднять чат вверх списка (будет внедрено в будущем)
       // chatsData.value = sortChats(chatsData.value);
     } else {
       // Если чата нет (например, написали впервые), нужно либо обновить список целиком,

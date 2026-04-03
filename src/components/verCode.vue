@@ -41,7 +41,6 @@ const handleInput = (index, event) => {
 };
 
 const handleKeyDown = (index, event) => {
-  // Если нажат Backspace и поле пустое — идем назад
   if (event.key === 'Backspace' && !code[index] && index > 0) {
     inputs.value[index - 1].focus();
   }
@@ -55,7 +54,6 @@ const handlePaste = (event) => {
     code[i] = char;
   });
 
-  // Фокус на последнее заполненное поле или кнопку
   inputs.value[Math.min(pasteData.length, codeLength - 1)].focus();
 };
 

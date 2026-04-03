@@ -9,10 +9,10 @@ const USER_PASSWORD = isNode
     : import.meta.env.VITE_USER_PASSWORD;
 
 export async function initLocalUserDB(uid, dbName) {
-    const remoteURL = `http://${uid}:${USER_PASSWORD}@localhost:5984/${dbName}`; // Используй админские права на сервере
+    const remoteURL = `http://${uid}:${USER_PASSWORD}@localhost:5984/${dbName}`;
     const remoteDB = new PouchDB(remoteURL);
 
-    // Просто проверяем, что база существует/создается
+    // проверяем что база существует/создается
     try {
         await remoteDB.info();
         console.log(`[Server] База ${dbName} готова к работе.`);
@@ -28,15 +28,14 @@ export function getDB(dbName) {
 }
 
 export async function getRemoteDB(dbName, uid) {
-    // Стучимся на НАШ сервер, а не на CouchDB
+
     const url = `http://localhost:5005/sync/${dbName}`;
 
     return new PouchDB(url, {
         skip_setup: true,
         fetch: (url, opts) => {
             opts.headers = new Headers(opts.headers);
-            // Передаем UID (или в будущем JWT токен)
-            // Пароль знает ТОЛЬКО сервер в Express
+            // Передам в будущем JWT токен
             opts.headers.set('x-user-Id', uid);
             return PouchDB.fetch(url, opts);
         }

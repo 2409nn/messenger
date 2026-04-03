@@ -10,20 +10,14 @@ const { putUserProfile, getProfileById, getUserProfile, updateUserProfile } = re
 const {loadUserChats} = require("./db/chat.service.js");
 const {sendMessage} = require("./db/chat.service.js");
 const {fetchChatsProfile} = require("./db/sync.service.js");
-//
-// require('dotenv').config();
-//
+
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const USER_PASSWORD = process.env.USER_PASSWORD;
-//
-// console.log(USER_PASSWORD)
 
 const authHeaderAdmin = 'Basic ' + Buffer.from(`admin:${ADMIN_PASSWORD}`).toString('base64');
 const app = express();
 
 app.use(cors({
-    // Вместо '*' пишем функцию, которая разрешает любой входящий Origin,
-    // но при этом позволяет работать с credentials (это обход правила браузера)
     origin: function (origin, callback) {
         callback(null, true);
     },
@@ -32,21 +26,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'ngrok-skip-browser-warning']
 }));
 
-// Важно для предзапросов (браузер сначала шлет OPTIONS)
 
 app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
     target: 'http://127.0.0.1:5984',
     changeOrigin: true,
     pathRewrite: { '^/sync': '' },
     onProxyReq: (proxyReq, req) => {
-        // Достаем UID (проверь, чтобы во Vue было такое же имя!)
         const uid = req.headers['x-user-id'] || req.headers['x-auth-id'];
 
         if (!uid && req.params.dbName) {
             console.error("[PROXY] КРИТИЧЕСКАЯ ОШИБКА: UID не пришел в заголовках!");
         }
 
-        // Обязательно .toLowerCase(), CouchDB не любит заглавные в именах юзеров
         const auth = 'Basic ' + Buffer.from(`${uid}:${USER_PASSWORD}`).toString('base64');
 
         proxyReq.removeHeader('Authorization');
@@ -58,7 +49,7 @@ app.use(['/sync/:dbName', '/sync'], createProxyMiddleware({
     }
 }));
 
-app.use(express.json()); // чтобы сервер мог понимать json в теле запроса
+app.use(express.json());
 
 // ---- Эндпоинты ----
 
@@ -77,7 +68,6 @@ app.post('/auth-sync', async (req, res) => {
             {_id: user.uid, username: userData.username, firstname: userData.firstname, lastname: userData.lastname},
         );
 
-        // Отправляем фронтенду данные для подключения к PouchDB
         res.json({
             status: "success",
             dbName: result.dbName,

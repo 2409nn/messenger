@@ -91,9 +91,7 @@ export async function stopUserSync() {
     lastUpdateSeq = null;
 }
 
-/**
- * Подписка на обновления базы конкретного пользователя.
- */
+ // Подписка на обновления базы конкретного пользователя.
 export async function subscribeToUserUpdates(uid, onNewMessage) {
     if (changesHandler) return;
 

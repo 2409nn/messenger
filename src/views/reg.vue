@@ -15,7 +15,7 @@
   const userData = userDataStore().userData;
   const router = useRouter();
 
-  // Состояние: true — форма логина, false — форма регистрации
+  // true — форма логина, false — форма регистрации
   const isLogin = ref(false);
   const alertTitle = ref('Error');
   const alertText = ref('Registration error');
@@ -145,7 +145,7 @@
           userData.uid = loginResult.uid;
 
           // получение токена
-          const token = loginResult.token; // JWT токен
+          const token = loginResult.token;
           const res = await fetch('http://localhost:5005/login', {
             method: 'POST',
             body: JSON.stringify({ idToken: token }),

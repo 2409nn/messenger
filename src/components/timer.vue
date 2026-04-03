@@ -10,22 +10,17 @@ const props = defineProps({
 
 const emit = defineEmits(["resendClicked"]);
 
-// 1. Создаем реактивную точку "сейчас"
 const now = ref(Date.now());
 let interval;
 
-// 2. Запускаем обновление "сейчас" каждую секунду
 onMounted(() => {
   interval = setInterval(() => {
     now.value = Date.now();
   }, 1000);
 });
 
-// Не забываем чистить за собой!
 onUnmounted(() => clearInterval(interval));
 
-// 3. Теперь duration будет пересчитываться каждую секунду,
-// так как зависимость now.value меняется
 const duration = computed(() => {
   return Math.max(props.endTime - now.value, 0);
 });

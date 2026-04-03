@@ -28,7 +28,7 @@ export const firebaseConfig = {
 // ----- инициализация ------
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app); // для регистрации через почту и пароль
-export const provider = new GoogleAuthProvider(); // для регистрации через google
+export const provider = new GoogleAuthProvider(); // для регистрации через google (будет внедрено в будущем)
 setPersistence(auth, browserLocalPersistence); // при входе токен пользователя сохраняется в localStorage
 
 // Вход через почту и пароль
@@ -92,7 +92,7 @@ export async function observeAuthState(callback) {
 // вход через email и пароль
 export async function verifyUserPassword(email, password) {
     try {
-        console.log(auth);
+        // console.log(auth);
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const token = await userCredential.user.getIdToken();
         return {
